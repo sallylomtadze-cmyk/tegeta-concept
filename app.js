@@ -309,12 +309,13 @@ function tick() {
   drive.steer += (steer - drive.steer) * .15;
   drive.x += drive.steer * .012 * Math.min(1, Math.abs(drive.v) / 6) * Math.sign(drive.v);
   drive.x = Math.max(-1.25, Math.min(1.25, drive.x));
+  if (drive.pos > TRACK * .8) drive.x *= .96; // the last stretch lines the car up with the door
   if (Math.abs(drive.x) > 1) drive.v *= .96; // off the asphalt: the car slows down
   drive.pos = Math.max(0, drive.pos + drive.v / 60);
   trip += Math.abs(drive.v) / 60 / 1000;
   if (drive.pos >= TRACK && !inside) {
     drive.pos = TRACK;
-    if (Math.abs(drive.x) < .4 && drive.v > 0) enter(); else { drive.v = 0; scr.classList.add('miss'); setTimeout(() => scr.classList.remove('miss'), 900); }
+    enter();
   }
   render(); hud(steer);
   const busy = drive.v !== 0 || Object.values(k).some(Boolean);
@@ -384,12 +385,19 @@ const ITEMS = [
   { id: 'batt', name: 'VARTA DYNAMIC SLI 60Ah', price: 215.2, ic: 'battery', url: SHOP + 'batteries/products', at: [5.6, .9, -3], shelf: 'აკუმულატორები', task: 'ახლა აკუმულატორი: აიღე და ჩადე კალათაში' },
   { id: 'tyre', name: 'BRIDGESTONE TURANZA 225/45 R17', price: 329, ic: 'tyre', url: SHOP + 'msubuqi-avtomobilis-saburavi/products', at: [-5.6, 1.4, 0], shelf: 'საბურავები', task: 'ბოლო: საბურავი კედლიდან კალათაში' },
 ];
-const ZONES = [{ id: 'counter', at: [0, 1.2, -7.6], l: 'გადახდა' }, { id: 'door', at: [0, 1.4, 8.6], l: 'გასასვლელი' }];
+// what each shelf offers: the first choice of every shelf is the mission product
+const CATALOG = {
+  oil: [['PETRONAS SYNTIUM 5000 5W-30, 4 ლ', 89], ['PETRONAS SYNTIUM 3000 5W-40, 4 ლ', 79], ['PETRONAS SYNTIUM 7000 0W-20, 4 ლ', 112], ['PETRONAS SYNTIUM 5000 5W-30, 1 ლ', 27]],
+  batt: [['VARTA DYNAMIC SLI 60Ah', 215.2], ['VARTA DYNAMIC SLI 74Ah', 351.2], ['VARTA DYNAMIC AGM 70Ah', 559.2], ['MACPOWER PREMIUM 62Ah', 249]],
+  tyre: [['BRIDGESTONE TURANZA 225/45 R17', 329], ['CONTINENTAL PREMIUMCONTACT 205/55 R16', 289], ['PIRELLI CINTURATO 215/60 R16', 279], ['BRIDGESTONE BLIZZAK 225/45 R17', 359]],
+};
+const ZONES = [{ id: 'counter', at: [0, 1.2, -7.6], l: 'გადახდა' }, { id: 'door', at: [0, 1.4, 8.6], l: 'გასასვლელი' }, { id: 'trolley', at: [2.4, .9, 7], l: 'ურიკა' }];
 const game = { on: false, out: false, basket: [], acts: [], target: null, yaw: 0, pitch: .18, zoom: 2.8, x: 0, z: 7, hand: null, mission: 0, pts: 0, bob: 0, drag: null, near: null, ready: false, rig: null };
 let R3, S3, C3, L3 = [], sprites = {};
 function build3d() {
   const cv = $('#store3d'), phone = innerWidth < 820; R3 = new THREE.WebGLRenderer({ canvas: cv, antialias: !phone, alpha: false }); R3.setPixelRatio(phone ? 1 : Math.min(devicePixelRatio || 1, 1.5));
-  R3.setClearColor(0x14202a); S3 = new THREE.Scene(); S3.fog = new THREE.Fog(0x0e1a24, 4, 24);
+  R3.setClearColor(0x14202a);
+  cv.addEventListener('webglcontextlost', e => { e.preventDefault(); showErr('3D ხელახლა იტვირთება'); }); cv.addEventListener('webglcontextrestored', () => { $('#toast').hidden = true; size3d(); }); S3 = new THREE.Scene(); S3.fog = new THREE.Fog(0x0e1a24, 4, 24);
   C3 = new THREE.PerspectiveCamera(72, 1, .1, 60);
   const T = new THREE.TextureLoader(), tex = (f, rx, ry, oy, m) => { const t = T.load(f, () => { m.map = t; m.color.set(0xffffff); m.needsUpdate = true; }); t.wrapS = THREE.RepeatWrapping; t.repeat.set(rx, ry); t.offset.y = oy; return t; };
   // walls start as plain graphite and get their photo as soon as it has loaded
@@ -421,10 +429,15 @@ function build3d() {
   };
   // tyres on the left: standing in rows, rubber with a lighter sidewall ring
   const rubber = new THREE.MeshStandardMaterial({ color: 0x15181b, roughness: .55, metalness: .05 }), rim = new THREE.MeshStandardMaterial({ color: 0x8e99a4, roughness: .35, metalness: .8 });
-  const tyres = inst(new THREE.TorusGeometry(.3, .11, 14, 28), rubber, 200), hubs = inst(new THREE.CylinderGeometry(.19, .19, .2, 20), rim, 200);
-  shelfUnit(-1, -8, 16, [.55, 1.45, 2.35, 3.25], (i, x, y, z0, len) => { for (let z = z0 + .4; z < z0 + len - .3; z += .5) { put(tyres, x, y + .41, z, Math.PI / 2); put(hubs, x, y + .41, z, 0, Math.PI / 2); } });
+  const tyres = inst(new THREE.TorusGeometry(.3, .11, 14, 28), rubber, 320), hubs = inst(new THREE.CylinderGeometry(.19, .19, .2, 20), rim, 320);
+  shelfUnit(-1, -8, 16, [.55, 1.45, 2.35, 3.25], (i, x, y, z0, len) => { for (let z = z0 + .35; z < z0 + len - .3; z += .25) { put(tyres, x, y + .41, z, 0); put(hubs, x, y + .41, z, 0, Math.PI / 2); } }); // tread toward the aisle, packed like the real rack
   // oils and batteries on the right
-  const oilLab = label(['PETRONAS', 'SYNTIUM 5W-30'], '#0f6e52', '#ffffff'), battLab = label(['VARTA', 'BLUE DYNAMIC'], '#1b4fa0', '#ffffff');
+  const oilLab = label(['SYNTIUM', '5W-30'], '#0f6e52', '#ffffff'), battLab = label(['VARTA', 'BLUE DYNAMIC'], '#1b4fa0', '#ffffff');
+  // real brand marks drawn onto the labels once the SVGs load
+  const brandOn = (tex, src, x, y, w, h) => { const im = new Image(); im.onload = () => { const c = tex.image, cx = c.getContext('2d'); cx.drawImage(im, x, y, w, h); tex.needsUpdate = true; }; im.src = src; };
+  brandOn(oilLab, 'img/brands/petronas.svg', 8, 6, 60, 44);
+  // tyre brands on a sign along the rack
+  ['bridgestone', 'continental', 'pirelli'].forEach((b, i) => { const im = new Image(); im.onload = () => { const c = document.createElement('canvas'); c.width = 512; c.height = 128; const x = c.getContext('2d'); x.fillStyle = '#121a21'; x.fillRect(0, 0, 512, 128); x.fillStyle = '#fff'; x.fillRect(0, 118, 512, 10); x.fillStyle = '#fdb913'; x.fillRect(0, 118, 512, 4); const s = Math.min(420 / im.width, 80 / im.height); x.drawImage(im, 256 - im.width * s / 2, 64 - im.height * s / 2, im.width * s, im.height * s); const t = new THREE.CanvasTexture(c); const m = new THREE.Mesh(new THREE.PlaneGeometry(4.6, 1.15), new THREE.MeshBasicMaterial({ map: t })); m.position.set(-W / 2 + .12, 3.75, -5.3 + i * 5.3); m.rotation.y = Math.PI / 2; S3.add(m); }; im.src = `img/brands/${b}.svg`; });
   const canMat = new THREE.MeshStandardMaterial({ color: 0x178a66, roughness: .4, metalness: .1 }), capMat = new THREE.MeshStandardMaterial({ color: 0xe9eef2, roughness: .4 });
   const cans = inst(new THREE.BoxGeometry(.19, .3, .13, 1, 1, 1), canMat, 160), caps = inst(new THREE.CylinderGeometry(.035, .035, .04, 12), capMat, 160), canLabels = inst(new THREE.PlaneGeometry(.17, .11), new THREE.MeshBasicMaterial({ map: oilLab }), 160);
   const battMat = new THREE.MeshStandardMaterial({ color: 0x23282c, roughness: .6 }), batts = inst(new THREE.BoxGeometry(.34, .2, .2), battMat, 80), battTops = inst(new THREE.BoxGeometry(.34, .02, .2), new THREE.MeshStandardMaterial({ color: 0x1b4fa0, roughness: .5 }), 80), battLabels = inst(new THREE.PlaneGeometry(.3, .11), new THREE.MeshBasicMaterial({ map: battLab }), 80), poles = inst(new THREE.CylinderGeometry(.02, .02, .03, 8), rim, 160);
@@ -438,6 +451,18 @@ function build3d() {
   const heldBatt = new THREE.Group(); heldBatt.add(new THREE.Mesh(batts.geometry, battMat)); const bt = new THREE.Mesh(battTops.geometry, battTops.material); bt.position.y = .11; heldBatt.add(bt); const bl = new THREE.Mesh(battLabels.geometry, battLabels.material); bl.position.z = .101; heldBatt.add(bl);
   const heldTyre = new THREE.Group(); heldTyre.add(new THREE.Mesh(tyres.geometry, rubber)); const hh = new THREE.Mesh(hubs.geometry, rim); hh.rotation.x = Math.PI / 2; heldTyre.add(hh); heldTyre.scale.setScalar(.8);
   [heldOil, heldBatt, heldTyre].forEach(g => { g.visible = false; S3.add(g); }); game.heldMeshes = { oil: heldOil, batt: heldBatt, tyre: heldTyre };
+  // the shopping trolley: parked by the entrance until you take it, then it rolls in front of you
+  const trolley = new THREE.Group(), chrome = new THREE.MeshStandardMaterial({ color: 0xb8c2cc, roughness: .3, metalness: .9 });
+  const tub = new THREE.Mesh(new THREE.BoxGeometry(.56, .42, .82), new THREE.MeshStandardMaterial({ color: 0x9fb0bf, roughness: .35, metalness: .6, transparent: true, opacity: .35 })); tub.position.set(0, .66, 0); trolley.add(tub);
+  const edges = new THREE.LineSegments(new THREE.EdgesGeometry(tub.geometry), new THREE.LineBasicMaterial({ color: 0xdfe7ee })); edges.position.copy(tub.position); trolley.add(edges);
+  for (let i = 0; i < 4; i++) { const bar = new THREE.Mesh(new THREE.CylinderGeometry(.012, .012, .42, 8), chrome); bar.position.set(i % 2 ? .28 : -.28, .66, i < 2 ? .41 : -.41); trolley.add(bar); }
+  const handle = new THREE.Mesh(new THREE.CylinderGeometry(.018, .018, .6, 10), chrome); handle.rotation.z = Math.PI / 2; handle.position.set(0, .98, .5); trolley.add(handle);
+  [[-.28, .5], [.28, .5]].forEach(p => { const st = new THREE.Mesh(new THREE.CylinderGeometry(.014, .014, .55, 8), chrome); st.position.set(p[0], .7, p[1]); st.rotation.x = -.25; trolley.add(st); });
+  const base = new THREE.Mesh(new THREE.BoxGeometry(.5, .03, .76), chrome); base.position.y = .18; trolley.add(base);
+  [[-.24, .34], [.24, .34], [-.24, -.34], [.24, -.34]].forEach(p => { const w = new THREE.Mesh(new THREE.CylinderGeometry(.06, .06, .04, 14), new THREE.MeshStandardMaterial({ color: 0x1a2128, roughness: .7 })); w.rotation.z = Math.PI / 2; w.position.set(p[0], .06, p[1]); trolley.add(w); });
+  const strip = new THREE.Mesh(new THREE.BoxGeometry(.58, .03, .02), new THREE.MeshBasicMaterial({ color: 0xfdb913 })); strip.position.set(0, .88, .42); trolley.add(strip);
+  const cargo = new THREE.Group(); cargo.position.set(0, .5, 0); trolley.add(cargo);
+  trolley.position.set(2.4, 0, 7); trolley.rotation.y = Math.PI / 2; S3.add(trolley); game.trolley = { g: trolley, cargo, taken: false };
   // the counter: a real desk in front of the photo wall, with the yellow strip above
   const desk = new THREE.Mesh(new THREE.BoxGeometry(4.2, 1.05, .8), graphite); desk.position.set(0, .525, -8.1); S3.add(desk);
   const deskTop = new THREE.Mesh(new THREE.BoxGeometry(4.3, .05, .9), plankMat); deskTop.position.set(0, 1.07, -8.1); S3.add(deskTop);
@@ -478,8 +503,9 @@ function build3d() {
   const mk = (id, ic, at) => { const t = T.load(ic ? ic : 'img/logo.svg'); const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, transparent: true })); sp.scale.set(1.1, 1.1, 1); sp.position.set(...at); S3.add(sp);
     const ring = new THREE.Mesh(new THREE.RingGeometry(.35, .5, 40), new THREE.MeshBasicMaterial({ color: 0xfdb913, transparent: true, opacity: .55, side: THREE.DoubleSide })); ring.rotation.x = -Math.PI / 2; ring.position.set(at[0], .02, at[2]); S3.add(ring); sprites[id] = { sp, ring }; };
   ITEMS.forEach(i => mk(i.id, ic(i.ic), i.at));
-  mk('counter', ic('card'), [0, 1.25, -7.6]); sprites.counter.sp.scale.set(.7, .7, 1);
-  const LIC = { oil: 'oil', batt: 'battery', tyre: 'tyre', counter: 'card', door: 'keyfob' };
+  mk('counter', ic('card'), [0, 1.25, -7.6]);
+  sprites.trolleyRing = { sp: { position: { y: 0 }, visible: true }, ring: new THREE.Mesh(new THREE.RingGeometry(.35, .5, 40), new THREE.MeshBasicMaterial({ color: 0xfdb913, transparent: true, opacity: .55, side: THREE.DoubleSide })) }; sprites.trolleyRing.ring.rotation.x = -Math.PI / 2; sprites.trolleyRing.ring.position.set(2.4, .02, 7); S3.add(sprites.trolleyRing.ring); sprites.counter.sp.scale.set(.7, .7, 1);
+  const LIC = { oil: 'oil', batt: 'battery', tyre: 'tyre', counter: 'card', door: 'keyfob', trolley: 'shelf' };
   $('#labels3d').innerHTML = [...ITEMS.map(i => ({ id: i.id, l: i.shelf })), ...ZONES].map(z => `<span class="lb3" data-id="${z.id}"><img src="${ic(LIC[z.id])}" alt="">${z.l}</span>`).join('') + '<div class="obj-arrow" id="objArrow" hidden><i></i><b></b></div>';
   // objective beacon: a tall glowing column on the place you should go next, like a game waypoint
   const beam = new THREE.Mesh(new THREE.CylinderGeometry(.18, .32, 3.4, 16, 1, true), new THREE.MeshBasicMaterial({ color: 0xfdb913, transparent: true, opacity: .35, side: THREE.DoubleSide, depthWrite: false, blending: THREE.AdditiveBlending })); beam.position.y = 1.7; S3.add(beam); game.beam = beam;
@@ -506,6 +532,10 @@ function update3d(dt) {
   // third person: the figure walks ahead, the camera follows behind and above, pitch and zoom from the drag
   const rig = game.rig; rig.P.position.set(game.x, 0, game.z); if (mv || sx) { const want = game.yaw + Math.PI + Math.atan2(sx, mv); let da = want - rig.P.rotation.y; da = Math.atan2(Math.sin(da), Math.cos(da)); rig.P.rotation.y += da * Math.min(1, dt * 12); }
   if (rig.mixer) { rig.mixer.update(dt); play(mv ? 'walk' : 'idle'); }
+  if (game.trolley && game.trolley.taken) { // rolls in front of the shopper, turning with it
+    const tg = game.trolley.g, ang = rig.P.rotation.y; const tx = game.x + Math.sin(ang) * .95, tz = game.z + Math.cos(ang) * .95;
+    tg.position.x += (tx - tg.position.x) * Math.min(1, dt * 8); tg.position.z += (tz - tg.position.z) * Math.min(1, dt * 8); let da = ang - tg.rotation.y; da = Math.atan2(Math.sin(da), Math.cos(da)); tg.rotation.y += da * Math.min(1, dt * 8);
+  }
   for (const id in rig.held) rig.held[id].visible = !!game.hand && game.hand.id === id;
   if (game.hand && rig.hand && rig.held[game.hand.id]) { const hm = rig.held[game.hand.id]; rig.hand.getWorldPosition(hm.position); rig.hand.getWorldQuaternion(hm.quaternion); hm.position.y -= .14; hm.translateX(.02); if (game.hand.id === 'tyre') { hm.position.y -= .1; hm.rotateY(Math.PI / 2); } }
   const d = game.zoom, ph = game.pitch, fx = -Math.sin(game.yaw), fz = -Math.cos(game.yaw);
@@ -518,7 +548,7 @@ function update3d(dt) {
   for (const p of pts) { const d = Math.hypot(p.at[0] - game.x, p.at[2] - game.z); if (d < bd) { bd = d; best = p; } }
   game.near = best;
   // the objective: the mission item on its shelf, or the counter once you hold it; the beacon and the edge arrow point there
-  const obj = game.hand ? (ITEMS.find(i => i === game.hand) || ZONES[0]) : ITEMS[game.mission] || (game.basket.length ? ZONES[0] : ZONES[1]);
+  const obj = !game.trolley.taken ? ZONES[2] : game.hand ? ZONES[0] : ITEMS[game.mission - 1] || (game.basket.length ? ZONES[0] : ZONES[1]);
   game.beam.position.x = obj.at[0]; game.beam.position.z = obj.at[2]; game.beam.material.opacity = .25 + Math.sin(performance.now() / 300) * .1; game.beam.visible = !(best && best.id === obj.id);
   V3.set(obj.at[0], obj.at[1] + .8, obj.at[2]).project(C3);
   const arrow = $('#objArrow'), onScreen = V3.z < 1 && Math.abs(V3.x) < .95 && Math.abs(V3.y) < .95;
@@ -526,9 +556,10 @@ function update3d(dt) {
   if (!arrow.hidden) { let ax = V3.x, ay = V3.y; if (V3.z > 1) { ax = -ax; ay = -ay; } const m = Math.max(Math.abs(ax), Math.abs(ay)) || 1; ax /= m; ay /= m; const w2 = scr.clientWidth, h2 = scr.clientHeight; arrow.style.left = (ax * .86 + 1) / 2 * w2 + 'px'; arrow.style.top = (1 - ay * .8) / 2 * h2 + 'px'; arrow.style.setProperty('--r', Math.atan2(-ay, ax) * 180 / Math.PI + 'deg'); arrow.querySelector('b').textContent = Math.round(Math.hypot(obj.at[0] - game.x, obj.at[2] - game.z)) + ' მ'; }
   const pr = $('#prompt3d');
   let acts = [];
-  if (game.hand) acts = [['basket', `კალათაში ჩადე`], ['back', 'დადე უკან']];
+  if (game.hand) acts = game.trolley.taken ? [['cart', 'ურიკაში ჩადე'], ['back', 'დადე უკან']] : [['back', 'დადე უკან'], ['need', 'ურიკა შესასვლელთანაა']];
   else if (best) {
-    if (best.item) acts = [['pick', `აიღე: ${best.item.name}`]];
+    if (best.item) acts = [['choose', `აირჩიე: ${best.item.shelf}`]];
+    else if (best.id === 'trolley') acts = game.trolley.taken ? [] : [['take', 'აიღე ურიკა']];
     else if (best.id === 'counter') acts = game.basket.length ? [['pay', `გადაიხადე ${game.basket.reduce((s, i) => s + i.price, 0).toFixed(2)} ₾`]] : [['book', 'დაჯავშნა და სერვისები']];
     else acts = [['leave', 'ავტომობილთან დაბრუნება']];
   }
@@ -548,30 +579,43 @@ function update3d(dt) {
 function toast(m) { const t = $('#toast'); t.textContent = m; t.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => t.hidden = true, 2600); }
 function doAct(a) {
   const p = game.near;
-  if (a === 'pick' && p && p.item && !game.hand) { game.hand = p.item; $('#hand').hidden = false; $('#handImg').src = ic(p.item.ic); $('#handTx').textContent = p.item.name; toast('აიღე. ჩადე კალათაში ან დადე უკან'); }
+  if (a === 'take') { game.trolley.taken = true; toast('ურიკა შენია, წადი თაროებთან'); if (game.mission === 0) game.mission = 1; setMission(); }
+  else if (a === 'choose' && p && p.item) { shelf('pick:' + p.item.id); $('#shop').hidden = false; insideEl.classList.add('shopping'); }
   else if (a === 'back' && game.hand) { game.hand = null; $('#hand').hidden = true; toast('დადე უკან თაროზე'); }
-  else if (a === 'basket' && game.hand) {
+  else if (a === 'need') toast('ურიკა შესასვლელთან დგას');
+  else if (a === 'cart' && game.hand && game.trolley.taken) {
     const it = game.hand; game.basket.push(it); game.hand = null; $('#hand').hidden = true;
     addToCart(it.id === 'batt' ? 0 : it.id === 'oil' ? 4 : 5);
+    const src = game.rig.held[it.id], cl = src.clone(); cl.visible = true; const n = game.trolley.cargo.children.length; cl.position.set((n % 2 ? .13 : -.13), .08 + Math.floor(n / 2) * .16, (n % 3 - 1) * .22); cl.rotation.set(0, Math.random(), it.id === 'tyre' ? Math.PI / 2 : 0); cl.scale.setScalar(it.id === 'tyre' ? .55 : .9); game.trolley.cargo.add(cl);
     $('#basketN').textContent = game.basket.length; $('#basket').hidden = false;
-    toast(`კალათაშია: ${it.name}`); if (it === ITEMS[game.mission]) game.mission++; setMission();
+    toast(`ურიკაშია: ${it.name}`); const mi = ITEMS[game.mission - 1]; if (mi && mi.id === it.id) game.mission++; setMission();
   }
   else if (a === 'pay' && game.basket.length) {
     const sum = game.basket.reduce((s, i) => s + i.price, 0); game.pts += Math.round(sum); game.paid = (game.paid || 0) + game.basket.length; game.receipt = game.basket.slice(); game.basket = []; $('#basket').hidden = true;
+    game.trolley.cargo.clear();
     toast(`+${Math.round(sum)} PLUS ქულა`); setMission(); shelf('checkout'); $('#shop').hidden = false; insideEl.classList.add('shopping');
   }
   else if (a === 'book') { shelf('book'); $('#shop').hidden = false; insideEl.classList.add('shopping'); }
   else if (a === 'leave') leave();
 }
+function pickProduct(type, i) {
+  const base = ITEMS.find(x => x.id === type), [name, price] = CATALOG[type][i];
+  game.hand = { id: type, name, price, ic: base.ic, url: base.url }; $('#hand').hidden = false; $('#handImg').src = ic(base.ic); $('#handTx').textContent = name;
+  closeShop(); toast('აიღე. ჩადე ურიკაში ან დადე უკან');
+}
 $('#prompt3d').onclick = e => { const b = e.target.closest('button'); if (b) doAct(b.dataset.a); };
 function setMission() {
-  const m = ITEMS[game.mission];
+  const m = game.mission === 0 ? { task: 'აიღე ურიკა შესასვლელთან' } : ITEMS[game.mission - 1];
   $('#missionTx').textContent = m ? m.task : game.basket.length ? 'მიდი დახლთან და გადაიხადე კალათა' : 'ყველა დავალება შესრულებულია';
   $('#missionPts').textContent = `${game.pts} PLUS ქულა`;
-  insideEl.classList.toggle('won', !m && !game.basket.length && game.paid);
+  insideEl.classList.toggle('won', !m && !game.basket.length && !!game.paid);
 }
 let loop3d = 0, last3d = 0;
-function frame3d(ts) { if (!inside || !game.on) return; const dt = Math.min(.05, (ts - last3d) / 1000 || 0); last3d = ts; try { update3d(dt); } catch (e) { showErr(e); return; } loop3d = requestAnimationFrame(frame3d); }
+let frames3d = 0;
+function frame3d(ts) { if (!inside || !game.on) return; const dt = Math.min(.05, (ts - last3d) / 1000 || 0); last3d = ts; try { update3d(dt); } catch (e) { showErr(e); return; }
+  if (++frames3d % 60 === 0 && (R3.domElement.width < 2 || R3.info.render.calls === 0 || Math.abs(C3.aspect - scr.clientWidth / scr.clientHeight) > .01)) size3d(); // heal a canvas that was sized while hidden
+  if (frames3d === 2) insideEl.classList.add('rendered');
+  loop3d = requestAnimationFrame(frame3d); }
 function showErr(e) { const t = $('#toast'); t.hidden = false; t.style.whiteSpace = 'normal'; t.textContent = 'შეცდომა: ' + (e && e.message || e); t.dataset.stack = (e && e.stack || '').slice(0, 600); console.error(e); }
 // touch like Roblox: a thumb on the left half is a joystick that walks, a thumb on the right half looks around, two fingers pinch to zoom; a tap on a shelf walks there
 const cv3 = $('#store3d'), touches = {}, stick = { id: null, x0: 0, y0: 0, dx: 0, dy: 0 }, look = { id: null, x: 0, y: 0, moved: 0 };
@@ -614,8 +658,8 @@ function getOut() { if (game.out) return; game.out = true; if (!getOut.shown) { 
 function enter() {
   inside = true; drive.keys = {}; drive.v = 0; game.out = false; game.on = false;
   scr.classList.add('entering'); render(); hud(0);
-  setFs(true); document.body.classList.add('playing');
-  setTimeout(() => { scr.classList.add('in'); insideEl.setAttribute('aria-hidden', 'false'); $('#walk').hidden = true; try { if (!game.ready) build3d(); size3d(); } catch (e) { showErr(e); } Object.assign(game, { x: 0, z: 5.2, yaw: 0 }); setMission(); getOut(); }, 700);
+  setFs(true); document.body.classList.add('playing'); insideEl.classList.remove('rendered'); frames3d = 0;
+  setTimeout(() => { scr.classList.add('in'); insideEl.setAttribute('aria-hidden', 'false'); $('#walk').hidden = true; try { if (!game.ready) build3d(); size3d(); } catch (e) { showErr(e); } Object.assign(game, { x: 0, z: 5.2, yaw: 0, hand: null, basket: [], mission: 0 }); if (game.trolley) { game.trolley.taken = false; game.trolley.g.position.set(2.4, 0, 7); game.trolley.g.rotation.y = Math.PI / 2; game.trolley.cargo.clear(); } $('#basket').hidden = true; $('#hand').hidden = true; setMission(); getOut(); }, 700);
 }
 function leave() {
   inside = false; game.on = false; cancelAnimationFrame(loop3d); setFs(false); document.body.classList.remove('playing');
@@ -637,6 +681,7 @@ $('#shopCats').innerHTML = SHOP_TABS.map(g => `<button type="button" data-g="${g
 function shelf(g) {
   $$('#shopCats button').forEach(x => x.classList.toggle('on', x.dataset.g === g));
   $('#shopCats').hidden = g === 'book' || g === 'checkout';
+  if (g.startsWith('pick:')) { const type = g.slice(5); $('#shopCats').hidden = true; $('#shopItems').innerHTML = `<p class="co-h">${ITEMS.find(x => x.id === type).shelf}: აირჩიე</p>` + CATALOG[type].map((p, i) => `<div class="si"><img src="${ic(ITEMS.find(x => x.id === type).ic)}" alt=""><span><b>${p[0]}</b><em class="num">${p[1].toFixed(2)} ₾</em></span><button type="button" class="pick-btn" data-t="${type}" data-i="${i}">აიღე</button></div>`).join(''); return; }
   $('#shopItems').innerHTML = g === 'checkout'
     ? `<p class="co-h">შენი კალათა რეალურ მაღაზიაშიც გელოდება</p>` + game.receipt.map(i => `<a class="si" href="${i.url}"><img src="${ic(i.ic)}" alt=""><span><b>${i.name}</b><em class="num">${i.price.toFixed(2)} ₾</em></span><i class="go"></i></a>`).join('') + `<p class="co-t">სულ <b class="num">${game.receipt.reduce((s, i) => s + i.price, 0).toFixed(2)} ₾</b>, მიტანა თბილისში უფასოა</p>`
     : g === 'book'
@@ -646,7 +691,7 @@ function shelf(g) {
     : CATS.filter(c => c[0] === g).map(c => `<a class="si" href="${SHOP}${c[4]}/products"><img src="${ic(c[1])}" alt=""><span><b>${c[2]}</b><em>${num(c[3])} პროდუქტი</em></span></a>`).join('');
 }
 $('#shopCats').onclick = e => { const b = e.target.closest('button'); if (b) shelf(b.dataset.g); };
-$('#shopItems').onclick = e => { const b = e.target.closest('.add'); if (b) addToCart(+b.dataset.i); };
+$('#shopItems').onclick = e => { const pk = e.target.closest('.pick-btn'); if (pk) return pickProduct(pk.dataset.t, +pk.dataset.i); const b = e.target.closest('.add'); if (b) addToCart(+b.dataset.i); };
 addEventListener('keydown', e => { if (e.key === 'Escape' && inside) { if (!$('#shop').hidden) closeShop(); else leave(); } });
 
 // Road on the left: a small car drives down as the page scrolls; lane markings slide under it

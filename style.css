@@ -950,3 +950,6 @@ body.playing .dpad{display:none!important}
 .in .fs-btn{z-index:9}
 .shop{right:64px}
 @media (max-width:820px){.shop{right:10px}}
+.pick-btn{flex:none;height:34px;padding:0 14px;border-radius:999px;background:var(--y);color:#152129;font-size:12px;font-weight:700;font-feature-settings:'case' 1}
+.inside::after{content:"იტვირთება";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:2;font-size:13px;font-weight:700;font-feature-settings:'case' 1;letter-spacing:.08em;color:rgba(255,255,255,.7);pointer-events:none;transition:opacity .4s}
+.inside.rendered::after{opacity:0}
