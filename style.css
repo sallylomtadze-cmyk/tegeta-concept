@@ -1015,3 +1015,9 @@ body.playing .dpad{display:none!important}
 .swap-char img{width:36px;height:36px;border-radius:50%;object-fit:cover;object-position:50% 8%;background:rgba(255,255,255,.08)}
 .shopping .swap-char{display:none}
 @media (max-width:820px),(pointer:coarse){.swap-char{bottom:calc(158px + env(safe-area-inset-bottom,0px));left:22px}}
+
+/* full screen: an X in the date's place takes you back to the page; on the page the expand button sits beside the clock */
+.fs-btn .ic-x,body.fs .fs-btn .ic-full{display:none}body.fs .fs-btn .ic-x{display:block}
+body.fs:not(.playing) .fs-btn{left:16px;right:auto;top:calc(14px + env(safe-area-inset-top,0px));bottom:auto}
+body.fs:not(.playing) #clkDate{visibility:hidden}
+body:not(.fs) .scr-top #clk{margin-right:44px}
