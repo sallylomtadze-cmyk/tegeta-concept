@@ -399,7 +399,7 @@ const CATALOG = {
   tyre: [['BRIDGESTONE TURANZA 225/45 R17', 329], ['CONTINENTAL PREMIUMCONTACT 205/55 R16', 289], ['PIRELLI CINTURATO 215/60 R16', 279], ['BRIDGESTONE BLIZZAK 225/45 R17', 359]],
 };
 const ZONES = [{ id: 'counter', at: [0, 1.2, -7.6], l: 'გადახდა' }, { id: 'door', at: [0, 1.4, 8.6], l: 'გასასვლელი' }, { id: 'trolley', at: [-1.6, .9, 3.4], l: 'ურიკა' }];
-const game = { char: (() => { try { return localStorage.getItem('tg-char') || 'a'; } catch (x) { return 'a'; } })(), on: false, out: false, basket: [], acts: [], target: null, yaw: 0, pitch: .18, zoom: 2.8, x: 0, z: 7, hand: null, mission: 0, pts: 0, bob: 0, drag: null, near: null, ready: false, rig: null };
+const game = { char: 'a', on: false, out: false, basket: [], acts: [], target: null, yaw: 0, pitch: .18, zoom: 2.8, x: 0, z: 7, hand: null, mission: 0, pts: 0, bob: 0, drag: null, near: null, ready: false, rig: null };
 let R3, S3, C3, L3 = [], sprites = {}, phone3d = innerWidth < 820;
 function build3d() {
   const cv = $('#store3d'), phone = innerWidth < 820; R3 = new THREE.WebGLRenderer({ canvas: cv, antialias: !phone, alpha: false }); R3.setPixelRatio(phone ? 1 : Math.min(devicePixelRatio || 1, 1.5));
@@ -555,12 +555,14 @@ function makeRetarget(src, tgt) {
 }
 // two shoppers: 'a' the Tegeta mannequin, 'b' a man (Ready Player Me avatar) driven by the same animations through the retarget
 async function setCharacter(id) {
-  game.char = id; try { localStorage.setItem('tg-char', id); } catch (x) {}
+  game.char = id;
   const rig = game.rig; if (!rig) return;
   [rig.model, rig.src].forEach(o => o && rig.P.remove(o)); rig.mixer && rig.mixer.stopAllAction();
   if (rig.cap) { S3.remove(rig.cap); rig.cap = null; }
   Object.assign(rig, { model: null, src: null, sync: null, mixer: null, clips: {}, cur: null, hand: null, head: null, arms: [], fore: [], hips: null, male: false });
   try {
+    // the models load after the page (deferred); a quick first entry waits for them instead of showing only the shadow
+    if (document.readyState !== 'complete') await new Promise(r => addEventListener('load', r, { once: true })); if (game.char !== id) return;
     const g = await parseGlb(window.SHOPPER_B64); if (game.char !== id) return;
     const src = g.scene; let m = src;
     if (id === 'b') { m = (await parseGlb(window.SHOPPER2_B64)).scene; if (game.char !== id) return; }
