@@ -432,15 +432,21 @@ function build3d() {
     });
     for (let z = z0; z <= z0 + len + .01; z += len / 3) { const up = new THREE.Mesh(new THREE.BoxGeometry(.9, 3.2, .05), plankMat); up.position.set(x, 1.65, z); S3.add(up); }
   };
-  // tyres on the left: standing in rows, rubber with a lighter sidewall ring
+  // tyres on the left: real tyre profiles (no rims, as sold), brand moulded into the sidewall, fanned so the sidewall faces you as you walk the aisle
   const rubber = new THREE.MeshStandardMaterial({ color: 0x15181b, roughness: .55, metalness: .05 }), rim = new THREE.MeshStandardMaterial({ color: 0x8e99a4, roughness: .35, metalness: .8 });
-  const tyres = inst(new THREE.TorusGeometry(.3, .11, 7, 16), rubber, 320), hubs = inst(new THREE.CylinderGeometry(.19, .19, .2, 10), rim, 320);
-  // every tyre carries its brand sticker on the tread, like on a real rack
-  const sticker = (name, bg, fg) => { const c = document.createElement('canvas'); c.width = 96; c.height = 256; const x = c.getContext('2d'); x.fillStyle = bg; x.fillRect(0, 0, 96, 256); x.fillStyle = fg; x.translate(48, 128); x.rotate(-Math.PI / 2); x.textAlign = 'center'; x.textBaseline = 'middle'; x.font = 'bold 34px Saira, Arial, sans-serif'; x.fillText(name, 0, 0); const t = new THREE.CanvasTexture(c); t.anisotropy = 4; return inst(new THREE.PlaneGeometry(.1, .26), new THREE.MeshBasicMaterial({ map: t }), 120); };
-  const stk = [sticker('BRIDGESTONE', '#e3e7ea', '#d0021b'), sticker('CONTINENTAL', '#fdb913', '#111111'), sticker('PIRELLI', '#111418', '#fdb913')];
+  const prof = [[.2, -.1], [.235, -.112], [.33, -.112], [.385, -.104], [.405, -.084], [.411, -.05], [.411, .05], [.405, .084], [.385, .104], [.33, .112], [.235, .112], [.2, .1]].map(p => new THREE.Vector2(p[0], p[1]));
+  const tyreGeo = new THREE.LatheGeometry(prof, 56); tyreGeo.rotateX(Math.PI / 2); // axis along z
+  const sideTex = (name, size, col) => { const c = document.createElement('canvas'); c.width = 2048; c.height = 256; const x = c.getContext('2d'); x.fillStyle = '#16191c'; x.fillRect(0, 0, 2048, 256);
+    const band = (v0, v1, flip) => { const y0 = (1 - v1) * 256, h = (v1 - v0) * 256; x.save(); x.translate(0, y0 + h / 2); if (flip) x.scale(-1, -1), x.translate(-2048, 0); x.textBaseline = 'middle'; x.textAlign = 'center';
+      [256, 1280].forEach(u => { x.fillStyle = col; x.font = `bold ${h * .62}px Saira, Arial, sans-serif`; x.fillText(name, u, 0); x.fillStyle = '#9aa3ab'; x.font = `600 ${h * .4}px Saira, Arial, sans-serif`; x.fillText(size, u + 520, 0); }); x.restore(); };
+    band(1 / 11, 3 / 11, false); band(8 / 11, 10 / 11, true);
+    x.fillStyle = '#0d0f11'; for (let u = 0; u < 2048; u += 16) x.fillRect(u, (1 - 7 / 11) * 256, 6, (3 / 11) * 256); // tread blocks
+    const t = new THREE.CanvasTexture(c); t.anisotropy = 8; return new THREE.MeshStandardMaterial({ map: t, roughness: .62, metalness: .04 }); };
+  const brands = [['BRIDGESTONE', '225/45 R17 91W', '#f2f4f6'], ['CONTINENTAL', '205/55 R16 91V', '#fdb913'], ['PIRELLI', '215/60 R16 95V', '#f2f4f6']];
+  const tyreSets = brands.map(b => inst(tyreGeo, sideTex(...b), 140));
   let tn = 0;
-  shelfUnit(-1, -8, 16, [.55, 1.45, 2.35, 3.25], (i, x, y, z0, len) => { for (let z = z0 + .35; z < z0 + len - .3; z += .25) { put(tyres, x, y + .41, z, 0); put(hubs, x, y + .41, z, 0, Math.PI / 2); put(stk[Math.floor(tn++ / 4) % 3], x + .413, y + .41, z, Math.PI / 2); } });
-  stk.forEach(m => m.instanceMatrix.needsUpdate = true); // tread toward the aisle, packed like the real rack
+  shelfUnit(-1, -8, 16, [.55, 1.45, 2.35, 3.25], (i, x, y, z0, len) => { for (let z = z0 + .4; z < z0 + len - .35; z += .26) put(tyreSets[Math.floor(tn++ / 7) % 3], x, y + .41, z, .5); });
+  tyreSets.forEach(m => m.instanceMatrix.needsUpdate = true);
   // oils and batteries on the right
   const oilLab = label(['SYNTIUM', '5W-30'], '#1c242b', '#ffffff'), battLab = label(['VARTA', 'BLUE DYNAMIC'], '#1b4fa0', '#ffffff');
   // real brand marks drawn onto the labels once the SVGs load
@@ -455,23 +461,33 @@ function build3d() {
     if (i >= 2) for (let z = z0 + .3; z < z0 + len - .2; z += .24) { put(cans, x + .15, y + .15, z); put(caps, x + .15, y + .325, z - .035); put(canLabels, x + .15 - .066, y + .15, z, -Math.PI / 2); }
     else for (let z = z0 + .35; z < z0 + len - .3; z += .42) { put(batts, x + .1, y + .1, z); put(battTops, x + .1, y + .21, z); put(poles, x + .1, y + .235, z - .12); put(poles, x + .1, y + .235, z + .12); put(battLabels, x + .1 - .101, y + .1, z, -Math.PI / 2); }
   });
-  [tyres, hubs, cans, caps, canLabels, batts, battTops, battLabels, poles].forEach(m => m.instanceMatrix.needsUpdate = true);
+  [cans, caps, canLabels, batts, battTops, battLabels, poles].forEach(m => m.instanceMatrix.needsUpdate = true);
   // the same products as single meshes, to carry in the hand
   const heldOil = new THREE.Group(); heldOil.add(new THREE.Mesh(cans.geometry, canMat)); const hc = new THREE.Mesh(caps.geometry, capMat); hc.position.set(0, .17, -.03); heldOil.add(hc); const hl = new THREE.Mesh(canLabels.geometry, canLabels.material); hl.position.z = .066; heldOil.add(hl);
   const heldBatt = new THREE.Group(); heldBatt.add(new THREE.Mesh(batts.geometry, battMat)); const bt = new THREE.Mesh(battTops.geometry, battTops.material); bt.position.y = .11; heldBatt.add(bt); const bl = new THREE.Mesh(battLabels.geometry, battLabels.material); bl.position.z = .101; heldBatt.add(bl);
-  const heldTyre = new THREE.Group(); heldTyre.add(new THREE.Mesh(tyres.geometry, rubber)); const hh = new THREE.Mesh(hubs.geometry, rim); hh.rotation.x = Math.PI / 2; heldTyre.add(hh); heldTyre.scale.setScalar(.8);
+  const heldTyre = new THREE.Group(); heldTyre.add(new THREE.Mesh(tyreGeo, tyreSets[0].material)); heldTyre.scale.setScalar(.8);
   [heldOil, heldBatt, heldTyre].forEach(g => { g.visible = false; S3.add(g); }); game.heldMeshes = { oil: heldOil, batt: heldBatt, tyre: heldTyre };
-  // the shopping trolley: parked by the entrance until you take it, then it rolls in front of you
-  const trolley = new THREE.Group(), chrome = new THREE.MeshStandardMaterial({ color: 0xb8c2cc, roughness: .3, metalness: .9 });
-  const tub = new THREE.Mesh(new THREE.BoxGeometry(.56, .42, .82), new THREE.MeshStandardMaterial({ color: 0x9fb0bf, roughness: .35, metalness: .6, transparent: true, opacity: .35 })); tub.position.set(0, .66, 0); trolley.add(tub);
-  const edges = new THREE.LineSegments(new THREE.EdgesGeometry(tub.geometry), new THREE.LineBasicMaterial({ color: 0xdfe7ee })); edges.position.copy(tub.position); trolley.add(edges);
-  for (let i = 0; i < 4; i++) { const bar = new THREE.Mesh(new THREE.CylinderGeometry(.012, .012, .42, 8), chrome); bar.position.set(i % 2 ? .28 : -.28, .66, i < 2 ? .41 : -.41); trolley.add(bar); }
-  const handle = new THREE.Mesh(new THREE.CylinderGeometry(.018, .018, .6, 10), chrome); handle.rotation.z = Math.PI / 2; handle.position.set(0, .98, .5); trolley.add(handle);
-  [[-.28, .5], [.28, .5]].forEach(p => { const st = new THREE.Mesh(new THREE.CylinderGeometry(.014, .014, .55, 8), chrome); st.position.set(p[0], .7, p[1]); st.rotation.x = -.25; trolley.add(st); });
-  const base = new THREE.Mesh(new THREE.BoxGeometry(.5, .03, .76), chrome); base.position.y = .18; trolley.add(base);
-  [[-.24, .34], [.24, .34], [-.24, -.34], [.24, -.34]].forEach(p => { const w = new THREE.Mesh(new THREE.CylinderGeometry(.06, .06, .04, 14), new THREE.MeshStandardMaterial({ color: 0x1a2128, roughness: .7 })); w.rotation.z = Math.PI / 2; w.position.set(p[0], .06, p[1]); trolley.add(w); });
-  const strip = new THREE.Mesh(new THREE.BoxGeometry(.58, .03, .02), new THREE.MeshBasicMaterial({ color: 0xfdb913 })); strip.position.set(0, .88, .42); trolley.add(strip);
-  const cargo = new THREE.Group(); cargo.position.set(0, .5, 0); trolley.add(cargo);
+  // the shopping trolley: a tapered wire basket on a chrome frame, yellow handle, swivel casters; parked by the entrance until you take it
+  const trolley = new THREE.Group(), chrome = new THREE.MeshStandardMaterial({ color: 0xd4dbe2, roughness: .22, metalness: .92 });
+  const wires = new THREE.InstancedMesh(new THREE.CylinderGeometry(1, 1, 1, 6), chrome, 160); wires.count = 0;
+  const _a = new THREE.Vector3(), _up = new THREE.Vector3(0, 1, 0), _m = new THREE.Matrix4(), _qq = new THREE.Quaternion(), _s = new THREE.Vector3();
+  const wire = (a, b, r = .005) => { _a.set(b[0] - a[0], b[1] - a[1], b[2] - a[2]); const len = _a.length(); _qq.setFromUnitVectors(_up, _a.normalize()); _m.compose(new THREE.Vector3((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2), _qq, _s.set(r, len, r)); wires.setMatrixAt(wires.count++, _m); };
+  // basket corners: bottom is narrower and shorter at the front, like a nesting trolley
+  const B = (t, u, v) => { const x = (u * 2 - 1) * (.22 + t * .06), z = -.32 - t * .13 + v * (.7 + t * .11), y = .5 + t * .4; return [x, y, z]; };
+  for (let t = 0; t <= 1.001; t += .25) { const r = t > .99 ? .011 : .005; wire(B(t, 0, 0), B(t, 1, 0), r); wire(B(t, 0, 1), B(t, 1, 1), r); wire(B(t, 0, 0), B(t, 0, 1), r); wire(B(t, 1, 0), B(t, 1, 1), r); } // rings, thicker rim on top
+  for (let v = 0; v <= 1.001; v += 1 / 9) { wire(B(0, 0, v), B(1, 0, v)); wire(B(0, 1, v), B(1, 1, v)); wire(B(0, 0, v), B(0, 1, v)); } // side uprights and floor
+  for (let u = 0; u <= 1.001; u += 1 / 6) { wire(B(0, u, 0), B(1, u, 0)); wire(B(0, u, 1), B(1, u, 1)); wire(B(0, u, 0), B(0, u, 1)); }
+  [-1, 1].forEach(sd => { const x = sd * .22;
+    wire([x, .5, .38], [x, .1, .36], .013); wire([x, .5, -.32], [x, .1, -.36], .013); wire([x, .1, -.38], [x, .1, .38], .013); // legs and base rail
+    wire([sd * .28, .9, .49], [sd * .28, .99, .56], .012); wire([x * .8, .2, -.3], [x * .8, .2, .3], .006); }); // handle arms, lower tray
+  for (let z = -.28; z <= .3; z += .1) wire([-.18, .2, z], [.18, .2, z], .005);
+  wires.instanceMatrix.needsUpdate = true; const frame = new THREE.Group(); frame.add(wires); trolley.add(frame);
+  const handle = new THREE.Mesh(new THREE.CylinderGeometry(.022, .022, .6, 16), new THREE.MeshStandardMaterial({ color: 0xfdb913, roughness: .45 })); handle.rotation.z = Math.PI / 2; handle.position.set(0, .99, .56); frame.add(handle);
+  const plate = new THREE.Mesh(new THREE.PlaneGeometry(.2, .07), new THREE.MeshBasicMaterial({ map: label(['TEGETA'], '#fdb913', '#141b21', 256, 90) })); plate.position.set(0, .82, -.465); plate.rotation.set(-.3, Math.PI, 0); frame.add(plate);
+  const tyreMat = new THREE.MeshStandardMaterial({ color: 0x1a2026, roughness: .6 }), fork = new THREE.MeshStandardMaterial({ color: 0x2a3138, roughness: .4, metalness: .6 });
+  [[-.22, .36], [.22, .36], [-.22, -.36], [.22, -.36]].forEach(p => { const f = new THREE.Mesh(new THREE.BoxGeometry(.05, .06, .03), fork); f.position.set(p[0], .1, p[1]); frame.add(f);
+    const w = new THREE.Mesh(new THREE.CylinderGeometry(.055, .055, .035, 20), tyreMat); w.rotation.z = Math.PI / 2; w.position.set(p[0], .055, p[1] - .02); trolley.add(w); });
+  const cargo = new THREE.Group(); cargo.position.set(0, .52, 0); trolley.add(cargo);
   trolley.position.set(-1.6, 0, 3.4); trolley.rotation.y = Math.PI; S3.add(trolley); game.trolley = { g: trolley, cargo, taken: false };
   // the counter: a real desk in front of the photo wall, with the yellow strip above
   const desk = new THREE.Mesh(new THREE.BoxGeometry(4.2, 1.05, .8), graphite); desk.position.set(0, .525, -8.1); S3.add(desk);
@@ -589,6 +605,18 @@ function aimArm(arm, fore, target, w) {
   _ax.copy(fore.position).normalize().applyQuaternion(_q); _q2.setFromUnitVectors(_ax, _v2).multiply(_q);
   arm.parent.getWorldQuaternion(_q); arm.quaternion.slerp(_q.invert().multiply(_q2), w); fore.quaternion.slerp(_q0, w * .85);
 }
+// small sounds made on the fly (no files): a soft pick, a wire-basket clink, the terminal beep, the door chime
+let AC = null;
+function sfx(kind) { try { AC = AC || new (window.AudioContext || window.webkitAudioContext)(); if (AC.state === 'suspended') AC.resume();
+  const tone = (f, t0, d, type = 'sine', v = .12, f2) => { const o = AC.createOscillator(), g = AC.createGain(), t = AC.currentTime + t0; o.type = type; o.frequency.setValueAtTime(f, t); if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + d); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(v, t + .01); g.gain.exponentialRampToValueAtTime(.001, t + d); o.connect(g).connect(AC.destination); o.start(t); o.stop(t + d + .02); };
+  if (kind === 'pick') tone(520, 0, .12, 'sine', .1, 780);
+  if (kind === 'back') tone(600, 0, .14, 'sine', .08, 380);
+  if (kind === 'cart') { tone(1900, 0, .18, 'triangle', .06); tone(2600, .03, .22, 'triangle', .04); tone(140, 0, .12, 'sine', .14, 90); }
+  if (kind === 'pay') { tone(1320, 0, .09, 'square', .05); tone(1320, .13, .09, 'square', .05); tone(1760, .26, .25, 'sine', .08); }
+  if (kind === 'door') { tone(660, 0, .5, 'sine', .07); tone(880, .18, .7, 'sine', .07); }
+  if (kind === 'take') tone(220, 0, .16, 'triangle', .1, 160);
+  if (navigator.vibrate && kind !== 'door') navigator.vibrate(kind === 'pay' ? [20, 60, 20] : 12);
+} catch (e) {} }
 function shelfPoint(id) { const it = ITEMS.find(x => x.id === id); return new THREE.Vector3(Math.sign(it.at[0]) * 5.15, Math.max(.8, Math.min(1.6, it.at[1])), game.z); }
 function play(name) { const r = game.rig; if (!r.mixer || r.cur === name) return; const a = r.clips[name]; if (!a) return; if (r.cur) r.clips[r.cur].fadeOut(.25); a.reset().fadeIn(.25).play(); r.cur = name; }
 function size3d() { if (!R3) return; const w = scr.clientWidth, h = scr.clientHeight; R3.setSize(w, h, false); C3.aspect = w / h; C3.fov = w < h ? 74 : 72; C3.updateProjectionMatrix(); game.zoom = w < h ? 4.6 : 2.8; game.pitch = w < h ? .2 : .12; }
@@ -627,7 +655,7 @@ function update3d(dt) {
       else { T.lerp(g.at, sm(Math.min(1, p / .45))); w = p < .55 ? 1 : 1 - sm((p - .55) / .45); }
       if (g.kind !== 'cart' && p < .5) { const sd = Math.sign(g.at.x), want = g.at.x - sd * .75; if ((want - game.x) * sd > 0) game.x += (want - game.x) * Math.min(1, dt * 7); } // steps in to the shelf
       if (!g.fired && p >= .5) { g.fired = true; g.fn && g.fn(); }
-      if (p >= 1) game.grab = null; }
+      if (p >= 1) { game.grab = null; if (g.next) doAct(g.next); } }
     aimArm(RA, RF, T, w);
   }
   if (game.trolley && game.trolley.taken) { // rolls in front of the shopper, turning with it
@@ -678,21 +706,33 @@ function update3d(dt) {
   for (const id in sprites) { const s = sprites[id]; s.sp.position.y = (ITEMS.find(i => i.id === id)?.at[1] ?? 1.3) + .9 + Math.sin(t * 2 + s.sp.position.x) * .05; s.ring.material.opacity = (best && best.id === id) ? .9 : .4; s.sp.visible = true; }
   const w = scr.clientWidth, h = scr.clientHeight;
   $$('#labels3d .lb3').forEach(l => { const p = pts.find(x => x.id === l.dataset.id); if (p.id === 'trolley' && game.trolley.taken) { l.style.display = 'none'; return; } V3.set(p.at[0], p.at[1] + .75, p.at[2]).project(C3); const vis = V3.z < 1 && Math.abs(V3.x) < 1.1; l.style.display = vis ? '' : 'none'; l.style.left = (V3.x + 1) / 2 * w + 'px'; l.style.top = (1 - V3.y) / 2 * h + 'px'; l.classList.toggle('on', best && best.id === p.id); });
+  // labels never sit on the shopper, on each other or under the HUD: lift them above the head, stack them, drop the ones that can't fit
+  { const head = V3.set(game.x, 1.85, game.z).project(C3), hy = (1 - head.y) / 2 * h, hx = (head.x + 1) / 2 * w, fy = (1 - V3.set(game.x, 0, game.z).project(C3).y) / 2 * h, hw = (fy - hy) * .3 + 30;
+    const sr = scr.getBoundingClientRect(), top = ($('.mission')?.getBoundingClientRect().bottom || 0) - sr.top + 8, placed = [];
+    ['#toast', '#hand', '#basket'].forEach(q => { const e = $(q); if (!e || e.hidden) return; const r = e.getBoundingClientRect(); if (r.width) placed.push({ x: r.left - sr.left + r.width / 2, y: r.bottom - sr.top, w: r.width, h: r.height }); }); // HUD boxes count as taken space
+    $$('#labels3d .lb3').filter(l => l.style.display !== 'none').sort((a, b) => b.classList.contains('on') - a.classList.contains('on')).forEach(l => {
+      const lw = l.offsetWidth, lh = l.offsetHeight, x = Math.max(lw / 2 + 8, Math.min(w - lw / 2 - 8, parseFloat(l.style.left))); let y = parseFloat(l.style.top); l.style.left = x + 'px'; // never cut by the screen edge
+      if (Math.abs(x - hx) < hw + lw / 2 && y > hy && y - lh < fy) y = hy - 6;
+      for (const r of placed) if (Math.abs(x - r.x) < (lw + r.w) / 2 + 6 && Math.abs(y - r.y) < lh + 4) y = r.y - r.h - 6;
+      if (y - lh < top || y > h - 150) { l.style.display = 'none'; return; }
+      l.style.top = y + 'px'; placed.push({ x, y, w: lw, h: lh }); }); }
   if (game.mirror) game.mirror.visible = !phone3d;
   R3.render(S3, C3);
 }
-function toast(m) { const t = $('#toast'); t.textContent = m; t.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => t.hidden = true, 2600); }
+function toast(m) { const t = $('#toast'); t.textContent = m; t.hidden = false;
+  // sits just under the shopping list (any height), or low when a panel is open, so it never covers either
+  const mr = $('.mission')?.getBoundingClientRect(), sh = !$('#shop').hidden; t.style.top = !sh && mr && mr.height ? mr.bottom - insideEl.getBoundingClientRect().top + 8 + 'px' : ''; clearTimeout(toast.t); toast.t = setTimeout(() => t.hidden = true, 2600); }
 function doAct(a) {
   const p = game.near;
-  if (a === 'take') { game.trolley.taken = true; sprites.trolleyRing.ring.visible = false; game.need = new Set(ITEMS.map(i => i.id)); toast('ურიკა შენია, სიაში სამი ნივთია'); setMission(); }
+  if (a === 'take') { sfx('take'); game.trolley.taken = true; sprites.trolleyRing.ring.visible = false; game.need = new Set(ITEMS.map(i => i.id)); toast('ურიკა შენია, სიაში სამი ნივთია'); setMission(); }
   else if (a.startsWith('choose:')) { shelf('pick:' + a.slice(7)); $('#shop').hidden = false; insideEl.classList.add('shopping'); }
-  else if (a === 'back' && game.hand) { if (game.grab) return; $('#hand').hidden = true; game.grab = { kind: 'back', t: 0, at: shelfPoint(game.hand.id), fn: () => { game.hand = null; toast('დადე უკან თაროზე'); } }; }
+  else if (a === 'back' && game.hand) { if (game.grab) { game.grab.next = 'back'; return; } $('#hand').hidden = true; game.grab = { kind: 'back', t: 0, at: shelfPoint(game.hand.id), fn: () => { game.hand = null; sfx('back'); toast('დადე უკან თაროზე'); } }; }
   else if (a === 'need') toast('ურიკა შესასვლელთან დგას');
-  else if (a === 'cart' && game.hand && game.trolley.taken) { if (game.grab) return; $('#hand').hidden = true; game.grab = { kind: 'cart', t: 0, at: game.trolley.g.position.clone().setY(.95), fn: () => toCart(game.hand) }; }
+  else if (a === 'cart' && game.hand && game.trolley.taken) { if (game.grab) { game.grab.next = 'cart'; return; } $('#hand').hidden = true; game.grab = { kind: 'cart', t: 0, at: game.trolley.g.position.clone().setY(.95), fn: () => { sfx('cart'); toCart(game.hand); } }; }
   else if (a === 'pay' && game.basket.length) {
     const sum = game.basket.reduce((s, i) => s + i.price, 0); game.pts += Math.round(sum); game.paid = (game.paid || 0) + game.basket.length; game.receipt = game.basket.slice(); game.basket = []; $('#basket').hidden = true;
     game.trolley.cargo.clear();
-    toast(`+${Math.round(sum)} PLUS ქულა`); if (game.posScr) { game.posScr.material.color.set(0x34d27b); setTimeout(() => game.posScr.material.color.set(0x5fb4ff), 2500); } setMission(); shelf('checkout'); $('#shop').hidden = false; insideEl.classList.add('shopping');
+    sfx('pay'); if (game.posScr) { game.posScr.material.color.set(0x34d27b); setTimeout(() => game.posScr.material.color.set(0x5fb4ff), 2500); } setMission(); shelf('checkout'); $('#shop').hidden = false; insideEl.classList.add('shopping'); toast(`+${Math.round(sum)} PLUS ქულა`);
   }
   else if (a === 'book') { shelf('book'); $('#shop').hidden = false; insideEl.classList.add('shopping'); }
   else if (a === 'leave') leave();
@@ -707,7 +747,7 @@ function toCart(it) {
 function pickProduct(type, i) {
   const base = ITEMS.find(x => x.id === type), [name, price] = CATALOG[type][i];
   game.hand = { id: type, name, price, ic: base.ic, url: base.url, spec: SPEC[type][i] }; $('#hand').hidden = false; $('#handImg').src = ic(base.ic); $('#handTx').innerHTML = `<b>${name}</b><br>${SPEC[type][i]}<br><span class="num">${price.toFixed(2)} ₾</span>`;
-  game.grab = { kind: 'pick', t: 0, at: shelfPoint(type) };
+  game.grab = { kind: 'pick', t: 0, at: shelfPoint(type), fn: () => sfx('pick') };
   closeShop(); toast('აიღე. ჩადე ურიკაში ან დადე უკან');
 }
 $('#prompt3d').addEventListener('pointerdown', e => { const b = e.target.closest('button'); if (b) { e.preventDefault(); doAct(b.dataset.a); } });
@@ -767,7 +807,7 @@ $('#labels3d').addEventListener('pointerup', e => { if (e.target.closest('.obj-a
 function wake3d() { /* the loop runs while inside; nothing to wake */ }
 // straight into the store: a short blink, as if stepping out of the car
 function getOut() { if (game.out) return; game.out = true; if (!getOut.shown) { getOut.shown = true; $('#touchHint').hidden = false; setTimeout(() => { $('#touchHint').hidden = true; }, 6000); } insideEl.classList.add('door'); setTimeout(() => insideEl.classList.remove('door'), 900); game.on = true; last3d = 0; loop3d = requestAnimationFrame(frame3d); }
-function enter() {
+function enter() { sfx('door');
   inside = true; drive.keys = {}; drive.v = 0; drive.cruise = false; game.out = false; game.on = false;
   scr.classList.add('entering'); render(); hud(0);
   setFs(true); document.body.classList.add('playing'); insideEl.classList.remove('rendered'); frames3d = 0;

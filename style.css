@@ -1022,4 +1022,8 @@ body.fs:not(.playing) .fs-btn{left:16px;right:auto;top:calc(14px + env(safe-area
 body.fs:not(.playing) #clkDate{visibility:hidden}
 body:not(.fs) .scr-top #clk{margin-right:44px}
 /* phone, full screen drive: the arrows sit above the trip / range numbers; with the receipt open the points message sits under its title */
-@media (max-width:820px){body.fs:not(.playing) .dpad{bottom:calc(46px + env(safe-area-inset-bottom,0px))}.inside.shopping .toast{top:auto;bottom:calc(150px + env(safe-area-inset-bottom,0px))}}
+@media (max-width:820px){body.fs:not(.playing) .dpad{bottom:calc(46px + env(safe-area-inset-bottom,0px))}}
+@media (max-width:820px),(pointer:coarse){.inside.shopping .toast{top:auto;bottom:calc(150px + env(safe-area-inset-bottom,0px))}
+  .inside .hand{top:auto!important;left:auto!important;right:12px!important;bottom:calc(132px + env(safe-area-inset-bottom,0px))!important}.inside .hand span{max-width:140px}
+  .inside .mission{max-width:calc(100% - 104px)}}
+.inside.shopping .stick,.inside.shopping .swap-char{visibility:hidden}
