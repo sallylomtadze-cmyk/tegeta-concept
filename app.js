@@ -545,44 +545,49 @@ function build3d() {
 // two shoppers in the same Tegeta mannequin style: 'a' as modelled, 'b' a man — same model reshaped (broader shoulders, narrower hips, taller) walking with a masculine walk cycle
 const parseGlb = b64 => new Promise((ok, bad) => new THREE.GLTFLoader().parse(Uint8Array.from(atob(b64), c => c.charCodeAt(0)).buffer, '', ok, bad));
 
-function makeCap() { // Tegeta cap: navy crown, yellow brim and button, built in head space
-  const g = new THREE.Group(), navy = new THREE.MeshStandardMaterial({ color: 0x152129, roughness: .7 }), yel = new THREE.MeshStandardMaterial({ color: 0xfdb913, roughness: .5 });
-  const crown = new THREE.Mesh(new THREE.SphereGeometry(.118, 24, 14, 0, Math.PI * 2, 0, Math.PI / 2), navy); crown.scale.set(1, .78, 1.08); crown.position.set(0, .115, .005); g.add(crown);
-  const band = new THREE.Mesh(new THREE.CylinderGeometry(.119, .121, .028, 24, 1, true), navy); band.position.set(0, .112, .005); band.scale.z = 1.08; g.add(band);
-  const brim = new THREE.Mesh(new THREE.CylinderGeometry(.115, .115, .016, 24, 1, false, -Math.PI / 2, Math.PI), yel); brim.scale.set(1.02, 1, 1.4); brim.position.set(0, .104, .09); brim.rotation.x = .2; g.add(brim);
-  const btn = new THREE.Mesh(new THREE.SphereGeometry(.014, 10, 8), yel); btn.position.set(0, .208, .005); g.add(btn);
-  return g;
+// runtime retarget: a hidden mannequin plays the clip; each frame its bone world rotations are mapped onto another skeleton
+function makeRetarget(src, tgt) {
+  const sb = {}, pairs = [], q = new THREE.Quaternion(), qp = new THREE.Quaternion();
+  src.traverse(o => { if (o.isBone) sb[o.name.replace(/^mixamorig/, '')] = o; });
+  src.updateMatrixWorld(true); tgt.updateMatrixWorld(true);
+  tgt.traverse(o => { const n = o.name.replace(/^mixamorig/, ''); if (o.isBone && sb[n]) { const a = new THREE.Quaternion(), b = new THREE.Quaternion(); sb[n].getWorldQuaternion(a); o.getWorldQuaternion(b); pairs.push({ t: o, s: sb[n], off: a.invert().multiply(b) }); } });
+  return () => { for (const p of pairs) { p.s.getWorldQuaternion(q).multiply(p.off); p.t.parent.getWorldQuaternion(qp); p.t.quaternion.copy(qp.invert().multiply(q)); p.t.updateMatrixWorld(true); } };
 }
+// two shoppers: 'a' the Tegeta mannequin, 'b' a man (Ready Player Me avatar) driven by the same animations through the retarget
 async function setCharacter(id) {
   game.char = id; try { localStorage.setItem('tg-char', id); } catch (x) {}
   const rig = game.rig; if (!rig) return;
-  if (rig.model) { rig.P.remove(rig.model); rig.mixer && rig.mixer.stopAllAction(); }
-  Object.assign(rig, { model: null, mixer: null, clips: {}, cur: null, hand: null, arms: [], fore: [] });
+  [rig.model, rig.src].forEach(o => o && rig.P.remove(o)); rig.mixer && rig.mixer.stopAllAction();
+  if (rig.cap) { S3.remove(rig.cap); rig.cap = null; }
+  Object.assign(rig, { model: null, src: null, sync: null, mixer: null, clips: {}, cur: null, hand: null, head: null, arms: [], fore: [], hips: null, male: false });
   try {
     const g = await parseGlb(window.SHOPPER_B64); if (game.char !== id) return;
-    const clips = g.animations;
-    const m = g.scene, bone = {};
-    m.traverse(o => {
-      if (o.isMesh) { o.frustumCulled = false; const mat = o.material; if (/Joints/i.test(mat.name)) { mat.color.set(0xe0a516); mat.metalness = .6; mat.roughness = .45; } else { mat.color.set(id === 'b' ? 0x1a2836 : 0x223548); mat.metalness = .2; mat.roughness = .42; } } // satin suit, brushed-gold joints
-      if (o.isBone) bone[o.name.replace(/^mixamorig:?/, '')] = o;
-      if (o.isBone && /RightHand$/.test(o.name)) rig.hand = o;
+    const src = g.scene; let m = src;
+    if (id === 'b') { m = (await parseGlb(window.SHOPPER2_B64)).scene; if (game.char !== id) return; }
+    const paint = o => { if (o.isMesh) { o.frustumCulled = false; const mat = o.material; if (/Joints/i.test(mat.name)) { mat.color.set(0xf2b705); mat.metalness = .6; mat.roughness = .45; } else { mat.color.set(0x2a2f36); mat.metalness = .2; mat.roughness = .42; } } };
+    if (m !== src) m.traverse(paint);
+    src.traverse(o => {
+      if (o.isMesh) { o.frustumCulled = false; const mat = o.material; if (/Joints/i.test(mat.name)) { mat.color.set(0xf2b705); mat.metalness = .6; mat.roughness = .45; } else { mat.color.set(0x2a2f36); mat.metalness = .2; mat.roughness = .42; } }
       if (o.isBone && /(Left|Right)Arm$/.test(o.name)) rig.arms.push(o);
       if (o.isBone && /(Left|Right)ForeArm$/.test(o.name)) rig.fore.push(o);
     });
-    if (id === 'b') { // reshape: narrower hips, broader chest and shoulders, taller; children counter-scaled so only that region changes
-      const sc = (n, x, y, z) => bone[n] && bone[n].scale.set(x, y, z);
-      sc('Hips', .95, 1, .95); sc('LeftUpLeg', 1.14 / .95, 1, 1.12 / .95); sc('RightUpLeg', 1.14 / .95, 1, 1.12 / .95); sc('LeftLeg', 1.1 / 1.14, 1, 1.1 / 1.12); sc('RightLeg', 1.1 / 1.14, 1, 1.1 / 1.12); sc('LeftFoot', 1.04 / 1.1, 1, 1.04 / 1.1); sc('RightFoot', 1.04 / 1.1, 1, 1.04 / 1.1); sc('Spine', 1.22 / .95, 1, .9 / .95); sc('Spine1', 1.34 / 1.22, 1, 1.02 / .9);
-      sc('Spine2', 1.26 / 1.34, 1.03, .96 / 1.02); sc('Neck', 1.1 / 1.26, 1 / 1.03, 1.1 / .96); sc('LeftShoulder', 1 / 1.26, 1 / 1.03, 1 / .96); sc('RightShoulder', 1 / 1.26, 1 / 1.03, 1 / .96); sc('LeftArm', 1.14, 1, 1.14); sc('RightArm', 1.14, 1, 1.14); sc('LeftForeArm', 1 / 1.14 * 1.1, 1, 1 / 1.14 * 1.1); sc('RightForeArm', 1 / 1.14 * 1.1, 1, 1 / 1.14 * 1.1); sc('LeftHand', 1 / 1.1, 1, 1 / 1.1); sc('RightHand', 1 / 1.1, 1, 1 / 1.1);
-      ['LeftShoulder', 'RightShoulder'].forEach(n => bone[n] && (bone[n].position.x *= 1.12));
-      m.scale.setScalar(1.05);
-    }
-    rig.hips = bone.Hips; rig.male = id === 'b'; rig.head = bone.Head; rig.legL = bone.LeftUpLeg; rig.legR = bone.RightUpLeg;
-    if (rig.cap) { S3.remove(rig.cap); rig.cap = null; } if (id === 'b') { rig.cap = makeCap(); S3.add(rig.cap); }
-    rig.P.add(m); rig.model = m; const mx = new THREE.AnimationMixer(m); rig.mixer = mx;
-    clips.forEach(c => rig.clips[c.name.toLowerCase()] = mx.clipAction(c));
+    m.traverse(o => { if (o.isMesh) o.frustumCulled = false; if (o.isBone && /RightHand$/.test(o.name)) rig.hand = o; });
+    rig.P.add(src); rig.model = m;
+    if (m !== src) { rig.P.add(m); src.visible = false; rig.src = src; rig.sync = makeRetarget(src, m); }
+    const mx = new THREE.AnimationMixer(src); rig.mixer = mx;
+    g.animations.forEach(c => rig.clips[c.name.toLowerCase()] = mx.clipAction(c));
     play('idle');
   } catch (e) { showErr('პერსონაჟი ვერ ჩაიტვირთა'); }
 }
+// one arm points at a world point: the upper arm turns so the elbow line aims there, the forearm straightens with it
+const _q = new THREE.Quaternion(), _q2 = new THREE.Quaternion(), _v = new THREE.Vector3(), _v2 = new THREE.Vector3(), _ax = new THREE.Vector3(), _q0 = new THREE.Quaternion();
+function aimArm(arm, fore, target, w) {
+  if (w <= 0) return; arm.updateMatrixWorld(true);
+  arm.getWorldPosition(_v); _v2.copy(target).sub(_v).normalize(); arm.getWorldQuaternion(_q);
+  _ax.copy(fore.position).normalize().applyQuaternion(_q); _q2.setFromUnitVectors(_ax, _v2).multiply(_q);
+  arm.parent.getWorldQuaternion(_q); arm.quaternion.slerp(_q.invert().multiply(_q2), w); fore.quaternion.slerp(_q0, w * .85);
+}
+function shelfPoint(id) { const it = ITEMS.find(x => x.id === id); return new THREE.Vector3(Math.sign(it.at[0]) * 5.15, Math.max(.8, Math.min(1.6, it.at[1])), game.z); }
 function play(name) { const r = game.rig; if (!r.mixer || r.cur === name) return; const a = r.clips[name]; if (!a) return; if (r.cur) r.clips[r.cur].fadeOut(.25); a.reset().fadeIn(.25).play(); r.cur = name; }
 function size3d() { if (!R3) return; const w = scr.clientWidth, h = scr.clientHeight; R3.setSize(w, h, false); C3.aspect = w / h; C3.fov = w < h ? 74 : 72; C3.updateProjectionMatrix(); game.zoom = w < h ? 4.6 : 2.8; game.pitch = w < h ? .2 : .12; }
 const V3 = new THREE.Vector3();
@@ -611,15 +616,26 @@ function update3d(dt) {
   // auto-walk ends when you can't get closer (a rack or the trolley in the way), so it never walks in place
   if (autoWalk && game.target) { const moved = Math.hypot(game.x - px0, game.z - pz0); game.stuck = moved < SPD * dt * .3 ? (game.stuck || 0) + 1 : 0; if (game.stuck > 6) { game.target = null; game.stuck = 0; game.marker.material.opacity = 0; } }
   const rig = game.rig; rig.P.position.set(game.x, 0, game.z); if (game.trolley.taken) rig.P.rotation.y = game.yaw + Math.PI; else if (mv || sx) { const want = game.yaw + Math.PI + Math.atan2(sx, mv); let da = want - rig.P.rotation.y; da = Math.atan2(Math.sin(da), Math.cos(da)); rig.P.rotation.y += da * Math.min(1, dt * 12); }
-  if (rig.mixer) { rig.mixer.update(dt); if (rig.male && rig.hips) { const e = new THREE.Euler().setFromQuaternion(rig.hips.quaternion); e.z *= .35; e.y *= .5; rig.hips.quaternion.setFromEuler(e); } if (rig.male && rig.legL) { rig.legL.rotateZ(window.__spread ?? .06); rig.legR.rotateZ(-(window.__spread ?? .06)); } play(mv ? 'walk' : 'idle'); if (game.trolley.taken && rig.arms) for (const b of rig.arms) { const L = b.name.includes('Left'); b.rotation.set(-1, 0, L ? -1.4 : 1.4); } if (game.trolley.taken && rig.fore) for (const b of rig.fore) b.rotation.set(0, 0, 0); }
+  if (rig.mixer) { rig.mixer.update(dt); play(mv ? 'walk' : 'idle'); if (game.trolley.taken && rig.arms) for (const b of rig.arms) { const L = b.name.includes('Left'); b.rotation.set(-1, 0, L ? -1.4 : 1.4); } if (game.trolley.taken && rig.fore) for (const b of rig.fore) b.rotation.set(0, 0, 0); }
+  const RA = rig.arms && rig.arms.find(b => !b.name.includes('Left')), RF = rig.fore && rig.fore.find(b => !b.name.includes('Left')), g = game.grab;
+  if (RA && RF && (game.hand || g)) {
+    const a = rig.P.rotation.y, T = V3.set(game.x + Math.sin(a) * .5 - Math.cos(a) * .2, 1.0, game.z + Math.cos(a) * .5 + Math.sin(a) * .2); let w = game.hand ? 1 : 0;
+    if (g) { g.t = Math.min(1, g.t + dt / .9); const p = g.t, sm = x => x * x * (3 - 2 * x);
+      if (g.kind === 'pick') { T.lerp(g.at, p < .45 ? sm(p / .45) : p < .6 ? 1 : 1 - sm((p - .6) / .4)); w = Math.min(1, p / .2); }
+      else { T.lerp(g.at, sm(Math.min(1, p / .45))); w = p < .55 ? 1 : 1 - sm((p - .55) / .45); }
+      if (g.kind !== 'cart' && p < .5) { const sd = Math.sign(g.at.x), want = g.at.x - sd * .75; if ((want - game.x) * sd > 0) game.x += (want - game.x) * Math.min(1, dt * 7); } // steps in to the shelf
+      if (!g.fired && p >= .5) { g.fired = true; g.fn && g.fn(); }
+      if (p >= 1) game.grab = null; }
+    aimArm(RA, RF, T, w);
+  }
   if (game.trolley && game.trolley.taken) { // rolls in front of the shopper, turning with it
     const tg = game.trolley.g, ang = rig.P.rotation.y; const tx = game.x + Math.sin(ang) * .62, tz = game.z + Math.cos(ang) * .62;
     tg.position.set(tx, 0, tz); tg.rotation.y = ang + Math.PI;
     if (mv) for (const w of tg.children) if (w.geometry && w.geometry.type === 'CylinderGeometry' && w.position.y < .1) w.rotation.y += dt * 6; // wheels spin
   }
-  if (rig.cap && rig.head) { rig.head.getWorldPosition(rig.cap.position); rig.head.getWorldQuaternion(rig.cap.quaternion); rig.cap.scale.setScalar(rig.model ? rig.model.scale.x : 1); }
+  if (rig.sync) rig.sync();
   for (const id in rig.held) rig.held[id].visible = !!game.hand && game.hand.id === id;
-  if (game.hand && rig.hand && rig.held[game.hand.id]) { const hm = rig.held[game.hand.id]; rig.hand.getWorldPosition(hm.position); hm.position.y += .1; hm.position.x += Math.sin(game.yaw + Math.PI) * .25; hm.position.z += Math.cos(game.yaw + Math.PI) * .25; if (game.hand.id === 'tyre') hm.position.y -= .1; }
+  if (game.hand && rig.hand && rig.held[game.hand.id]) { const hm = rig.held[game.hand.id]; if (g && g.kind === 'pick' && !g.fired) hm.position.copy(g.at); else { rig.hand.getWorldPosition(hm.position); hm.position.y -= game.hand.id === 'tyre' ? .12 : .06; } hm.rotation.y = rig.P.rotation.y; }
   const d = game.zoom, ph = game.pitch, fx = -Math.sin(game.yaw), fz = -Math.cos(game.yaw);
   C3.position.set(game.x - fx * d * Math.cos(ph), 1.5 + d * Math.sin(ph) + Math.sin(game.bob) * .02 * (mv ? 1 : 0), game.z - fz * d * Math.cos(ph));
   game.fovKick = (game.fovKick || 0) + ((mv ? 1 : 0) - (game.fovKick || 0)) * Math.min(1, dt * 3); C3.fov = (scr.clientWidth < scr.clientHeight ? 74 : 72) + game.fovKick * 4; C3.updateProjectionMatrix();
@@ -668,15 +684,9 @@ function doAct(a) {
   const p = game.near;
   if (a === 'take') { game.trolley.taken = true; sprites.trolleyRing.ring.visible = false; game.need = new Set(ITEMS.map(i => i.id)); toast('ურიკა შენია, სიაში სამი ნივთია'); setMission(); }
   else if (a.startsWith('choose:')) { shelf('pick:' + a.slice(7)); $('#shop').hidden = false; insideEl.classList.add('shopping'); }
-  else if (a === 'back' && game.hand) { game.hand = null; $('#hand').hidden = true; toast('დადე უკან თაროზე'); }
+  else if (a === 'back' && game.hand) { if (game.grab) return; $('#hand').hidden = true; game.grab = { kind: 'back', t: 0, at: shelfPoint(game.hand.id), fn: () => { game.hand = null; toast('დადე უკან თაროზე'); } }; }
   else if (a === 'need') toast('ურიკა შესასვლელთან დგას');
-  else if (a === 'cart' && game.hand && game.trolley.taken) {
-    const it = game.hand; game.basket.push(it); game.hand = null; $('#hand').hidden = true;
-    const n0 = $('#cartN'); n0.textContent = +n0.textContent + 1; n0.classList.add('bump'); setTimeout(() => n0.classList.remove('bump'), 300);
-    const src = game.rig.held[it.id], cl = src.clone(); cl.visible = true; const n = game.trolley.cargo.children.length; cl.position.set((n % 2 ? .13 : -.13), .08 + Math.floor(n / 2) * .16, (n % 3 - 1) * .22); cl.rotation.set(0, Math.random(), it.id === 'tyre' ? Math.PI / 2 : 0); cl.scale.setScalar(it.id === 'tyre' ? .55 : .9); game.trolley.cargo.add(cl);
-    $('#basketN').textContent = game.basket.length; $('#basket').hidden = false;
-    toast(`ურიკაშია: ${it.name}`); game.need.delete(it.id); setMission();
-  }
+  else if (a === 'cart' && game.hand && game.trolley.taken) { if (game.grab) return; $('#hand').hidden = true; game.grab = { kind: 'cart', t: 0, at: game.trolley.g.position.clone().setY(.95), fn: () => toCart(game.hand) }; }
   else if (a === 'pay' && game.basket.length) {
     const sum = game.basket.reduce((s, i) => s + i.price, 0); game.pts += Math.round(sum); game.paid = (game.paid || 0) + game.basket.length; game.receipt = game.basket.slice(); game.basket = []; $('#basket').hidden = true;
     game.trolley.cargo.clear();
@@ -685,9 +695,17 @@ function doAct(a) {
   else if (a === 'book') { shelf('book'); $('#shop').hidden = false; insideEl.classList.add('shopping'); }
   else if (a === 'leave') leave();
 }
+function toCart(it) {
+  game.basket.push(it); game.hand = null; $('#hand').hidden = true;
+  const n0 = $('#cartN'); n0.textContent = +n0.textContent + 1; n0.classList.add('bump'); setTimeout(() => n0.classList.remove('bump'), 300);
+  const src = game.rig.held[it.id], cl = src.clone(); cl.visible = true; const n = game.trolley.cargo.children.length; cl.position.set((n % 2 ? .13 : -.13), .08 + Math.floor(n / 2) * .16, (n % 3 - 1) * .22); cl.rotation.set(0, Math.random(), it.id === 'tyre' ? Math.PI / 2 : 0); cl.scale.setScalar(it.id === 'tyre' ? .55 : .9); game.trolley.cargo.add(cl);
+  $('#basketN').textContent = game.basket.length; $('#basket').hidden = false;
+  toast(`ურიკაშია: ${it.name}`); game.need.delete(it.id); setMission();
+}
 function pickProduct(type, i) {
   const base = ITEMS.find(x => x.id === type), [name, price] = CATALOG[type][i];
   game.hand = { id: type, name, price, ic: base.ic, url: base.url, spec: SPEC[type][i] }; $('#hand').hidden = false; $('#handImg').src = ic(base.ic); $('#handTx').innerHTML = `<b>${name}</b><br>${SPEC[type][i]}<br><span class="num">${price.toFixed(2)} ₾</span>`;
+  game.grab = { kind: 'pick', t: 0, at: shelfPoint(type) };
   closeShop(); toast('აიღე. ჩადე ურიკაში ან დადე უკან');
 }
 $('#prompt3d').addEventListener('pointerdown', e => { const b = e.target.closest('button'); if (b) { e.preventDefault(); doAct(b.dataset.a); } });
@@ -751,7 +769,7 @@ function enter() {
   inside = true; drive.keys = {}; drive.v = 0; drive.cruise = false; game.out = false; game.on = false;
   scr.classList.add('entering'); render(); hud(0);
   setFs(true); document.body.classList.add('playing'); insideEl.classList.remove('rendered'); frames3d = 0;
-  setTimeout(() => { scr.classList.add('in'); insideEl.setAttribute('aria-hidden', 'false'); $('#walk').hidden = true; try { if (!game.ready) build3d(); size3d(); } catch (e) { showErr(e); } Object.assign(game, { x: 0, z: 5.2, yaw: .35, hand: null, basket: [], need: new Set(ITEMS.map(i => i.id)) }); if (game.trolley) { game.trolley.taken = false; game.trolley.g.position.set(-1.6, 0, 3.4); game.trolley.g.rotation.y = Math.PI; game.trolley.cargo.clear(); sprites.trolleyRing.ring.visible = true; } $('#basket').hidden = true; $('#hand').hidden = true; setMission(); getOut(); }, 700);
+  setTimeout(() => { scr.classList.add('in'); insideEl.setAttribute('aria-hidden', 'false'); $('#walk').hidden = true; try { if (!game.ready) build3d(); size3d(); } catch (e) { showErr(e); } Object.assign(game, { x: 0, z: 5.2, yaw: .35, hand: null, basket: [], need: new Set(ITEMS.map(i => i.id)) }); if (game.rig) game.rig.P.rotation.y = game.yaw + Math.PI; if (game.trolley) { game.trolley.taken = false; game.trolley.g.position.set(-1.6, 0, 3.4); game.trolley.g.rotation.y = Math.PI; game.trolley.cargo.clear(); sprites.trolleyRing.ring.visible = true; } $('#basket').hidden = true; $('#hand').hidden = true; setMission(); getOut(); }, 700);
 // one button swaps the shopper; it shows the one you'd switch to
 const swapBtn = $('#swapChar'), paintSwap = () => { const o = game.char === 'b' ? 'a' : 'b'; swapBtn.querySelector('img').src = `img/char-${o}.png`; };
 swapBtn.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); setCharacter(game.char === 'b' ? 'a' : 'b'); paintSwap(); }); paintSwap();
