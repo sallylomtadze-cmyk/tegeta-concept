@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="ka">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Tegeta Motors Concept</title>
+<meta name="description" content="თეგეტა მოტორსი: საბურავები, ნაწილები, ზეთები და სერვისი. ონლაინ მაღაზია და სერვის ცენტრები მთელ საქართველოში.">
+<link rel="icon" href="img/logo.svg">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira:wght@200;300;400&display=swap">
+<link rel="stylesheet" href="style.css?v=45">
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 20 20"/></symbol>
+    <symbol id="i-bag" viewBox="0 0 24 24"><path d="M5 8h14l-1.2 11.2a1 1 0 0 1-1 .8H7.2a1 1 0 0 1-1-.8z"/><path d="M9 8V6.5a3 3 0 0 1 6 0V8"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M7 17 17 7M9 7h8v8"/></symbol>
+    <symbol id="i-right" viewBox="0 0 24 24"><path d="M4 12h15M14 7l5 5-5 5"/></symbol>
+    <symbol id="i-phone" viewBox="0 0 24 24"><path d="M6.5 4h3l1.5 4-2 1.2a10 10 0 0 0 5.8 5.8L16 13l4 1.5v3a2 2 0 0 1-2.2 2A15.5 15.5 0 0 1 4.5 6.2 2 2 0 0 1 6.5 4z"/></symbol>
+    <symbol id="i-mail" viewBox="0 0 24 24"><rect x="3.5" y="5.5" width="17" height="13" rx="2.5"/><path d="m4 7 8 6 8-6"/></symbol>
+    <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></symbol>
+    <symbol id="i-vin" viewBox="0 0 24 24"><path d="M4 7v10M7 7v10M10 7v10M14 7v10M16 7v10M20 7v10"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
+    <symbol id="i-map" viewBox="0 0 24 24"><path d="m3.5 6.5 5.5-2 6 2 5.5-2v13l-5.5 2-6-2-5.5 2z"/><path d="M9 4.5v13M15 6.5v13"/></symbol>
+    <symbol id="i-news" viewBox="0 0 24 24"><path d="M4 9.5v5l3 .5 9 4V5L7 9z"/><path d="M19 9.5a3 3 0 0 1 0 5"/></symbol>
+    <symbol id="i-fb" viewBox="0 0 24 24"><path d="M14 8.5h2.5V5H14a3.5 3.5 0 0 0-3.5 3.5V11H8v3.5h2.5V20H14v-5.5h2.5L17 11h-3V9a.5.5 0 0 1 .5-.5z"/></symbol>
+    <symbol id="i-ig" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="5"/><circle cx="12" cy="12" r="3.6"/><circle cx="16.8" cy="7.2" r=".6"/></symbol>
+    <symbol id="i-yt" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="4"/><path d="m10.5 9.5 4 2.5-4 2.5z"/></symbol>
+    <symbol id="i-in" viewBox="0 0 24 24"><path d="M6.5 10v8M6.5 6.5v.1M10.5 18v-8M10.5 13.5a3 3 0 0 1 6 0V18"/></symbol>
+  </defs>
+</svg>
+
+<div class="road" aria-hidden="true"><div class="lane"></div><img class="mini" src="img/car-top.jpg" alt=""></div>
+<div class="progress" aria-hidden="true"></div>
+
+<header class="nav" id="nav">
+  <a href="#top" class="logo"><img src="img/logo.svg" alt="თეგეტა მოტორსი"></a>
+  <nav class="links" id="links" aria-label="მენიუ">
+    <a href="#catalog" class="cap">კატალოგი</a>
+    <a href="#services" class="cap">სერვისი</a>
+    <a href="#offers" class="cap">შეთავაზებები</a>
+    <a href="#branches" class="cap">ფილიალები</a>
+    <a href="#company" class="cap">კომპანია</a>
+    <div class="menu-foot"><span>(+995 32) 226 44 44</span><span>info@tegetamotors.ge</span></div>
+  </nav>
+  <div class="nav-r">
+    <button class="ico hide-m" aria-label="ძიება"><svg class="i"><use href="#i-search"/></svg></button>
+    <button class="ico" aria-label="კალათა" id="cartBtn"><svg class="i"><use href="#i-bag"/></svg><b id="cartN">0</b></button>
+    <a class="login hide-m" href="https://account.tegetamotors.ge/">შესვლა</a>
+    <button class="ico burger" aria-label="მენიუ" aria-expanded="false" aria-controls="links" id="burger"><svg class="i"><use href="#i-menu"/></svg></button>
+  </div>
+</header>
+
+<section class="hero" id="top">
+  <div class="hero-head">
+    <div class="hero-l">
+      <p class="kicker">1995 წლიდან</p>
+      <h1 class="cap">საბურავები, ნაწილები და სერვისი</h1>
+      <p class="lead">აკუმულატორები, ზეთები და 18 400-ზე მეტი პროდუქტი ონლაინ. სერვის ცენტრები მთელ საქართველოში.</p>
+      <div class="hero-btns">
+        <a href="#catalog" class="lbtn"><span>კატალოგი</span></a>
+        <a href="https://reservation.tegetamotors.ge/" class="gbtn"><span>ვიზიტის დაჯავშნა</span></a>
+      </div>
+    </div>
+    <div class="hero-r">
+      <div class="stat"><b>18 400+</b><span>პროდუქტი ონლაინ</span></div>
+      <div class="stat"><b>*2644</b><span>ქოლ ცენტრი</span></div>
+    </div>
+  </div>
+
+  <div class="dash">
+    <svg class="bezel" viewBox="0 0 1600 760" preserveAspectRatio="none" aria-hidden="true">
+      <defs>
+        <linearGradient id="bz1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#22313f"/><stop offset="1" stop-color="#0d151c"/></linearGradient>
+        <linearGradient id="bzRim" x1="0" x2="1"><stop offset="0" stop-color="#dbe9f5" stop-opacity="0"/><stop offset=".35" stop-color="#dbe9f5" stop-opacity=".5"/><stop offset=".8" stop-color="#dbe9f5" stop-opacity=".25"/><stop offset="1" stop-color="#dbe9f5" stop-opacity="0"/></linearGradient>
+      </defs>
+            <path d="M0 210 C 260 120, 520 70, 800 70 C 1080 70, 1340 120, 1600 210" fill="none" stroke="url(#bzRim)" stroke-width="2"/>
+      <path d="M0 640 C 300 700, 560 690, 800 690 C 1040 690, 1300 700, 1600 640 L1600 760 L0 760 Z" fill="#0a1117"/>
+      <path d="M0 640 C 300 700, 560 690, 800 690 C 1040 690, 1300 700, 1600 640" fill="none" stroke="url(#bzRim)" stroke-width="1.5" opacity=".6"/>
+    </svg>
+    <div class="screen" id="screen">
+      <svg class="scene" viewBox="0 0 1200 480" preserveAspectRatio="none" aria-hidden="true">
+        <defs>
+          <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2c3d4e"/><stop offset=".9" stop-color="#5e7891"/><stop offset="1" stop-color="#8aa3b9"/></linearGradient>
+          <linearGradient id="ground" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b3c6d6"/><stop offset=".18" stop-color="#7f97ad"/><stop offset=".6" stop-color="#566c80"/><stop offset="1" stop-color="#3a4b5b"/></linearGradient>
+          <linearGradient id="shapeL" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#1d2a37"/><stop offset=".7" stop-color="#2d3e4f"/><stop offset="1" stop-color="#3f566c"/></linearGradient>
+          <linearGradient id="rim" x1="0" x2="1"><stop offset="0" stop-color="#fff" stop-opacity=".05"/><stop offset=".6" stop-color="#fff" stop-opacity=".7"/><stop offset="1" stop-color="#fff" stop-opacity=".1"/></linearGradient>
+          <linearGradient id="laneG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".05"/><stop offset="1" stop-color="#fff" stop-opacity=".45"/></linearGradient>
+        </defs>
+        <rect width="1200" height="240" fill="url(#sky)"/>
+        <path d="M0 150 C 180 110, 380 150, 520 215 C 560 232, 590 240, 640 240 L0 240 Z" fill="url(#shapeL)" opacity=".9"/>
+        <path d="M0 150 C 180 110, 380 150, 520 215 C 560 232, 590 240, 640 240" fill="none" stroke="url(#rim)" stroke-width="2"/>
+        <path d="M1200 70 C 1020 70, 900 120, 850 240 L 910 240 C 950 150, 1060 112, 1200 110 Z" fill="#22303d"/>
+        <path d="M1200 70 C 1020 70, 900 120, 850 240" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="2"/>
+        <path d="M1200 110 C 1060 112, 950 150, 910 240" fill="none" stroke="#fff" stroke-opacity=".18" stroke-width="1.5"/>
+        <rect y="240" width="1200" height="240" fill="url(#ground)"/>
+        <rect y="238" width="1200" height="4" fill="#fff" opacity=".35"/>
+      </svg>
+      <div class="centre" id="centre"><img src="img/centre.png" alt="თეგეტა მოტორსის სერვის ცენტრი"><img class="centre-logo" src="img/logo.svg" alt=""></div>
+      <canvas class="skid" id="skid" aria-hidden="true"></canvas>
+      <div class="car-wrap" id="car">
+        <img class="car" src="img/car-rear.png" alt="">
+        <i class="taillight"></i>
+      </div>
+
+      <div class="scr-top">
+        <span class="num" id="clkDate"></span>
+        <i class="sig l" id="sigL"></i><i class="sig r" id="sigR"></i>
+        <span class="num" id="clk"></span>
+      </div>
+      <div class="hud-speed"><b id="spd">0</b><span>კმ/სთ</span></div>
+      <div class="drive-hint" id="driveHint"><span class="kc">↑</span><span class="kc">↓</span><span class="kc">←</span><span class="kc">→</span><em>მართე ავტომობილი</em></div>
+      <a class="hud-nav" href="#branches">
+        <svg viewBox="0 0 40 40" aria-hidden="true"><path d="M26 36 V20 C26 14 22 11 16 11 H8 M13 5 L7 11 L13 17" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span><b class="num" id="navKm">4.2 კმ</b><em>თეგეტა მოტორსის სერვის ცენტრი</em></span>
+      </a>
+      <a class="hud-deal" href="https://shop.tegetamotors.ge/ge/batteries/products">
+        <span class="ring"><img src="img/ic/battery.png" alt=""></span>
+        <b>VARTA DYNAMIC SLI</b><em>215.20 ₾, ფასდაკლება 20%</em>
+      </a>
+      <div class="inside" id="inside" aria-hidden="true">
+        <canvas id="store3d"></canvas>
+        <div id="labels3d"></div>
+        <div class="stick" id="stick" hidden><i></i></div>
+        <div class="touch-hint" id="touchHint" hidden><button type="button" class="hint-x" id="hintClose" aria-label="დახურვა"><svg class="i" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+          <span><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M7 12h10"/></svg>მარცხენა მხარეს: იარე</span>
+          <span><svg class="i" viewBox="0 0 24 24"><path d="M4 12h16M14 6l6 6-6 6M10 6l-6 6 6 6"/></svg>მარჯვენა მხარეს: მიიხედე</span>
+          <span><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8" stroke-dasharray="3 3"/></svg>შეეხე წერტილს და მივა</span>
+        </div>
+        <div class="walk" id="walk"><img class="walk-bg" src="img/garage.jpg" alt=""><div class="get-out"><b class="cap">გადი ავტომობილიდან</b><span>დააჭირე ↑</span></div></div>
+        <div class="mission" id="mission"><small>დავალება</small><b id="missionTx"></b><em id="missionPts">0 PLUS ქულა</em></div>
+        <div class="basket" id="basket" hidden><svg class="i" viewBox="0 0 24 24"><path d="M3 7h18l-2 11H5L3 7zM8 7V5a4 4 0 0 1 8 0v2"/></svg><b id="basketN">0</b></div>
+        <div class="hand" id="hand" hidden><img id="handImg" src="" alt=""><span id="handTx"></span></div>
+        <div class="prompt3d" id="prompt3d" hidden></div>
+        <div class="toast" id="toast" hidden></div>
+        <button type="button" class="in-exit" id="exitBtn" aria-label="გასვლა"><svg class="i" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+        <div class="keys-hint" id="keysHint" aria-hidden="true"><span><i>W</i><i>A</i><i>S</i><i>D</i></span><em>იარე</em><span><i>⤡</i></span><em>მიიხედე</em><span><i>↑</i></span><em>აიღე / გადაიხადე</em></div>
+        <div class="shop" id="shop" hidden>
+          <button type="button" class="shop-x" id="shopClose" aria-label="დახურვა"><svg class="i" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+          <div class="shop-cats" id="shopCats"></div>
+          <div class="shop-items" id="shopItems"></div>
+          <div class="shop-cart"><span id="cartSum">კალათა ცარიელია</span><a class="lbtn" href="https://shop.tegetamotors.ge/"><span>შეკვეთა</span></a></div>
+        </div>
+      </div>
+      <button type="button" class="fs-btn" id="fsBtn" aria-label="მთელ ეკრანზე"><svg class="i" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+      <div class="hud-bar">
+        <span class="hb-trip">TRIP <b class="num" id="trip">0.0</b> კმ</span>
+        <span class="hb-batt"><i></i><b class="num">12.6</b> V</span>
+        <span class="gears" id="gears"><i class="on">P</i><i>R</i><i>N</i><i>D</i></span>
+        <a class="hud-svc" href="https://reservation.tegetamotors.ge/" id="svcLeft">სერვისამდე <b class="num">550</b> კმ</a>
+        <span class="hb-odo">ODO <b class="num" id="odo">002146</b> კმ</span>
+      </div>
+    </div>
+  </div>
+  <div class="dpad" id="dpad" aria-label="ავტომობილის მართვა">
+    <button data-k="ArrowUp" aria-label="წინ"><svg class="i" viewBox="0 0 24 24"><path d="m6 15 6-6 6 6"/></svg></button>
+    <button data-k="ArrowLeft" aria-label="მარცხნივ"><svg class="i" viewBox="0 0 24 24"><path d="m15 6-6 6 6 6"/></svg></button>
+    <button data-k="ArrowDown" aria-label="უკან"><svg class="i" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button>
+    <button data-k="ArrowRight" aria-label="მარჯვნივ"><svg class="i" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></button>
+  </div>
+  <form class="finder glass" id="finder">
+    <div class="tabs" role="tablist">
+      <button type="button" role="tab" aria-selected="true" class="on" data-f="tyre"><img src="img/ic/tyre.png" alt="">საბურავი</button>
+      <button type="button" role="tab" aria-selected="false" data-f="battery"><img src="img/ic/battery.png" alt="">აკუმულატორი</button>
+      <button type="button" role="tab" aria-selected="false" data-f="oil"><img src="img/ic/oil.png" alt="">ზეთი</button>
+      <button type="button" role="tab" aria-selected="false" data-f="vin"><img src="img/ic/clipboard.png" alt="">VIN</button>
+    </div>
+    <div class="fields" id="fields"></div>
+  </form>
+</section>
+
+<section class="brands">
+  <div class="marquee"><div class="track" id="brandTrack"></div></div>
+</section>
+
+<section class="sec" id="catalog">
+  <div class="head">
+    <div><h2 class="cap">პროდუქციის კატალოგი</h2><p class="sub">25 კატეგორია, 18 400-ზე მეტი პროდუქტი</p></div>
+  </div>
+  <div class="explorer">
+    <nav class="ex-groups" id="exGroups" aria-label="კატეგორიები"></nav>
+    <div class="ex-main">
+      <div class="stage">
+        <div class="stage-floor"></div>
+        <div class="stage-beam"></div>
+        <img class="stage-ref" id="stageRef" src="img/ic/tyre.png" alt="" aria-hidden="true">
+        <img class="stage-obj" id="stageObj" src="img/ic/tyre.png" alt="">
+      </div>
+      <div class="ex-side"><div class="ex-head"><h3 id="stageName"></h3><p id="stageCount"></p></div><div class="ex-rows" id="exRows"></div><a class="lbtn ex-cta" id="exCta" href="#"><span>მაღაზიაში ნახვა</span></a></div>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="deals">
+  <div class="head">
+    <div class="deal-h"><b class="deal-pct">−20%</b><div><h2 class="cap">ონლაინ ფასდაკლება</h2><p class="sub">აკუმულატორები ონლაინ შეკვეთისას. <span class="cd" id="cd"></span></p></div></div>
+    <a class="more" href="https://shop.tegetamotors.ge/ge/batteries/products">ყველა</a>
+  </div>
+  <div class="products" id="products"></div>
+</section>
+
+<section class="sec" id="services">
+  <div class="svc surf">
+    <div class="svc-car"><img src="img/car-wire.jpg" alt=""><div id="spots"></div></div>
+    <div class="svc-txt">
+      <h2 class="cap">სერვის ცენტრი</h2>
+            <ul class="svc-list" id="svcList"></ul>
+      <a href="https://reservation.tegetamotors.ge/" class="lbtn"><span>დაჯავშნე ონლაინ</span></a>
+    </div>
+  </div>
+</section>
+
+<section class="sec online">
+  <div class="head"><div><h2 class="cap">ონლაინ სერვისები</h2></div></div>
+  <div class="widgets">
+    <div class="wg wg-media surf">
+      <a class="wg-img" href="https://reservation.tegetamotors.ge/"><img src="img/suv.jpg" alt="" loading="lazy"></a>
+      <span class="wg-body"><a class="cap" href="https://reservation.tegetamotors.ge/"><b>ონლაინ რეზერვაცია</b></a><em>აირჩიე ფილიალი, დღე და საათი</em>
+        <span class="wg-line"><i id="dayBar"></i></span>
+        <span class="wg-ctl"><button type="button" data-d="-1" aria-label="წინა დღე"><svg class="i" viewBox="0 0 24 24"><path d="m15 6-6 6 6 6"/></svg></button><strong id="dayName">დღეს</strong><button type="button" data-d="1" aria-label="შემდეგი დღე"><svg class="i" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></button></span>
+      </span>
+    </div>
+    <a class="wg wg-season surf" id="season" href="https://tegetamotors.ge/ka/zamtris-saburavebi">
+      <span><b class="num" id="seasonT">+7°C</b><em id="seasonTx">ზამთრის საბურავების სეზონი</em><small id="seasonSm"></small></span>
+      <svg class="cloud" viewBox="0 0 120 80" aria-hidden="true"><defs><radialGradient id="sun" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#ffe08a"/><stop offset=".7" stop-color="#FDB913"/><stop offset="1" stop-color="#FDB913" stop-opacity="0"/></radialGradient><linearGradient id="cl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#c3d2df"/></linearGradient></defs><circle cx="84" cy="26" r="22" fill="url(#sun)"/><path d="M28 70 H92 A16 16 0 0 0 90 38 A22 22 0 0 0 48 34 A18 18 0 0 0 28 70 Z" fill="url(#cl)" opacity=".95"/></svg>
+    </a>
+    <a class="wg wg-map surf" href="#branches">
+      <svg class="route" viewBox="0 0 240 130" aria-hidden="true"><defs><linearGradient id="rt" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#3b6cff"/><stop offset="1" stop-color="#5ee0ff"/></linearGradient></defs>
+        <g stroke="rgba(255,255,255,.07)"><path d="M0 30H240M0 70H240M0 110H240M40 0V130M100 0V130M160 0V130M210 0V130"/></g>
+        <path d="M60 122 V60 C60 40 66 30 86 30 H120 C134 30 138 40 138 54 C138 66 146 70 158 70 H176" fill="none" stroke="url(#rt)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="60" cy="122" r="4" fill="#3b6cff"/><circle cx="178" cy="70" r="16" fill="#5ee0ff" opacity=".18"/><circle cx="178" cy="70" r="6" fill="#5ee0ff"/></svg>
+      <span class="wg-foot"><span>25 ფილიალი</span><span>12 ქალაქში</span></span>
+    </a>
+    <div class="olist surf" id="stack"></div>
+  </div>
+</section>
+
+<section class="sec" id="offers">
+  <div class="head">
+    <div><h2 class="cap">სიახლეები და შეთავაზებები</h2></div>
+    <a class="more" href="https://tegetamotors.ge/ka/actions-and-sales">ყველა</a>
+  </div>
+  <div class="news" id="news"></div>
+</section>
+
+<section class="sec" id="branches">
+  <div class="branch surf">
+    <div class="br-l">
+      <h2 class="cap">გვიპოვე რუკაზე</h2>
+      <div class="chips" id="branchChips"></div>
+      <div class="contact">
+        <span><svg class="i"><use href="#i-phone"/></svg>(+995 32) 226 44 44</span>
+        <span><svg class="i"><use href="#i-mail"/></svg>info@tegetamotors.ge</span>
+        <span><svg class="i"><use href="#i-pin"/></svg>თბილისი, დავით აღმაშენებლის ხეივანი №129</span>
+      </div>
+    </div>
+    <a class="map" href="https://www.google.com/maps/search/TEGETA+MOTORS" target="_blank" rel="noopener">
+      <svg class="map-art" viewBox="0 0 600 420" aria-hidden="true" id="mapArt"></svg>
+      <span class="lbtn"><span>რუკა</span></span>
+    </a>
+  </div>
+</section>
+
+<section class="sec" id="company">
+  <div class="head"><div><h2 class="cap">თეგეტა ჯგუფი</h2></div></div>
+  <div class="benefits" id="benefits"></div>
+  <div class="group" id="group"></div>
+</section>
+
+<footer class="foot">
+  <div class="foot-top">
+    <img src="img/logo.svg" alt="თეგეტა მოტორსი" class="foot-logo">
+    <div class="social">
+      <a href="https://www.facebook.com/TEGETAMOTORS" aria-label="Facebook" class="orb-btn"><svg class="i"><use href="#i-fb"/></svg></a>
+      <a href="https://instagram.com/tegetamotors/" aria-label="Instagram" class="orb-btn"><svg class="i"><use href="#i-ig"/></svg></a>
+      <a href="https://www.youtube.com/user/TegetaMotors/videos" aria-label="YouTube" class="orb-btn"><svg class="i"><use href="#i-yt"/></svg></a>
+      <a href="https://www.linkedin.com/company/3565756" aria-label="LinkedIn" class="orb-btn"><svg class="i"><use href="#i-in"/></svg></a>
+    </div>
+  </div>
+  <div class="foot-cols" id="footCols"></div>
+  <p class="copy">© 1995-2026 Tegeta Motors</p>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/objects/Reflector.js"></script>
+<script src="img/shopper.js" defer></script>
+<script src="app.js?v=55"></script>
+</body>
+</html>
