@@ -526,10 +526,12 @@ function build3d() {
     const pull = new THREE.Mesh(new THREE.BoxGeometry(.03, .6, .05), new THREE.MeshBasicMaterial({ color: 0xffc534 })); pull.position.set(-sd * .5, 1.1, 0); g.add(pull);
     g.position.set(sd * .6, 0, D / 2 - .03); S3.add(g); return g; });
   // outside: dusk sky, the parking lot with lines, a row of light poles
-  const sky = document.createElement('canvas'); sky.width = 4; sky.height = 256; { const x = sky.getContext('2d'), g = x.createLinearGradient(0, 0, 0, 256); g.addColorStop(0, '#0b1622'); g.addColorStop(.55, '#2c4a66'); g.addColorStop(.8, '#c98a52'); g.addColorStop(1, '#3a3530'); x.fillStyle = g; x.fillRect(0, 0, 4, 256); }
+  const sky = document.createElement('canvas'); sky.width = 4; sky.height = 256; // the sky outside follows the real hour in Tbilisi: day blue, dusk and dawn amber, night deep blue
+  const hr = +new Date().toLocaleString('en-GB', { timeZone: 'Asia/Tbilisi', hour: '2-digit', hour12: false }) % 24, tod = hr >= 8 && hr < 17 ? 'day' : (hr >= 6 && hr < 8) || (hr >= 17 && hr < 21) ? 'dusk' : 'night';
+  { const x = sky.getContext('2d'), g = x.createLinearGradient(0, 0, 0, 256); ({ day: ['#2f6fb5', '#79aee0', '#cfe3f2', '#8e99a1'], dusk: ['#0b1622', '#2c4a66', '#c98a52', '#3a3530'], night: ['#02060b', '#08131f', '#132538', '#15181c'] })[tod].forEach((c, i) => g.addColorStop([0, .55, .8, 1][i], c)); x.fillStyle = g; x.fillRect(0, 0, 4, 256); }
   const skyM = new THREE.Mesh(new THREE.PlaneGeometry(80, 26), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(sky), fog: false })); skyM.position.set(0, 9, D / 2 + 26); skyM.rotation.y = Math.PI; S3.add(skyM);
   const lot = document.createElement('canvas'); lot.width = 512; lot.height = 512; { const x = lot.getContext('2d'); x.fillStyle = '#1d2329'; x.fillRect(0, 0, 512, 512); x.strokeStyle = 'rgba(253,185,19,.8)'; x.lineWidth = 5; for (let i = 0; i <= 512; i += 64) { x.beginPath(); x.moveTo(i, 120); x.lineTo(i, 260); x.stroke(); } x.beginPath(); x.moveTo(0, 120); x.lineTo(512, 120); x.stroke(); }
-  const lotM = new THREE.Mesh(new THREE.PlaneGeometry(60, 26), new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(lot) })); lotM.rotation.x = -Math.PI / 2; lotM.position.set(0, -.01, D / 2 + 13); S3.add(lotM);
+  const lotM = new THREE.Mesh(new THREE.PlaneGeometry(60, 26), new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(lot) })); lotM.material.color.setScalar({ day: 1.25, dusk: .8, night: .5 }[tod]); lotM.rotation.x = -Math.PI / 2; lotM.position.set(0, -.01, D / 2 + 13); S3.add(lotM);
   for (let xx = -12; xx <= 12; xx += 8) { const pole = new THREE.Mesh(new THREE.CylinderGeometry(.06, .08, 6, 8), frameMat); pole.position.set(xx, 3, D / 2 + 16); S3.add(pole); const head = new THREE.Mesh(new THREE.BoxGeometry(1, .08, .25), new THREE.MeshBasicMaterial({ color: 0xffe2a8 })); head.position.set(xx + .4, 6, D / 2 + 16); S3.add(head); }
   const floor = new THREE.Mesh(new THREE.PlaneGeometry(W, D), new THREE.MeshPhongMaterial({ color: 0x3a4a57, specular: phone ? 0x3c4a56 : 0x7f93a6, shininess: phone ? 30 : 60 })); floor.rotation.x = -Math.PI / 2; S3.add(floor);
   const ceil = new THREE.Mesh(new THREE.PlaneGeometry(W, D), new THREE.MeshLambertMaterial({ color: 0x15202a })); ceil.rotation.x = Math.PI / 2; ceil.position.y = H; S3.add(ceil);
@@ -631,6 +633,14 @@ function sfx(kind) { try { AC = AC || new (window.AudioContext || window.webkitA
   if (kind === 'take') tone(220, 0, .16, 'triangle', .1, 160);
   if (navigator.vibrate && kind !== 'door') navigator.vibrate(kind === 'pay' ? [20, 60, 20] : 12);
 } catch (e) {} }
+// footsteps on the polished floor, and the trolley's wheels humming while it rolls
+let rollG = null;
+function step() { try { if (!AC || AC.state !== 'running') return; const n = AC.createBufferSource(), b = AC.createBuffer(1, AC.sampleRate * .06, AC.sampleRate), d = b.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 3);
+  const f = AC.createBiquadFilter(), g = AC.createGain(); f.type = 'lowpass'; f.frequency.value = 900 + Math.random() * 300; g.gain.value = .22; n.buffer = b; n.connect(f).connect(g).connect(AC.destination); n.start(); } catch (e) {} }
+function roll(level) { try { if (!AC || AC.state !== 'running') return;
+  if (!rollG) { const n = AC.createBufferSource(), b = AC.createBuffer(1, AC.sampleRate * 2, AC.sampleRate), d = b.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; n.buffer = b; n.loop = true;
+    const f = AC.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 320; f.Q.value = .8; rollG = AC.createGain(); rollG.gain.value = 0; n.connect(f).connect(rollG).connect(AC.destination); n.start(); }
+  rollG.gain.setTargetAtTime(level * .05, AC.currentTime, .08); } catch (e) {} }
 function shelfPoint(id) { const it = ITEMS.find(x => x.id === id); return new THREE.Vector3(Math.sign(it.at[0]) * 5.15, Math.max(.8, Math.min(1.6, it.at[1])), game.z); }
 function play(name) { const r = game.rig; if (!r.mixer || r.cur === name) return; const a = r.clips[name]; if (!a) return; if (r.cur) r.clips[r.cur].fadeOut(.25); a.reset().fadeIn(.25).play(); r.cur = name; }
 function size3d() { if (!R3) return; const w = scr.clientWidth, h = scr.clientHeight; R3.setSize(w, h, false); C3.aspect = w / h; C3.fov = w < h ? 74 : 72; C3.updateProjectionMatrix(); game.zoom = w < h ? 4.6 : 2.8; game.pitch = w < h ? .2 : .12; }
@@ -650,7 +660,7 @@ function update3d(dt) {
   }
   const px0 = game.x, pz0 = game.z, autoWalk = !!game.target;
   if ((mv || sx) && !$('#shop').hidden) { $('#shop').hidden = true; insideEl.classList.remove('shopping'); }
-  if (mv || sx) { game.x -= (Math.sin(game.yaw) * mv - Math.cos(game.yaw) * sx) * SPD * dt; game.z -= (Math.cos(game.yaw) * mv + Math.sin(game.yaw) * sx) * SPD * dt; game.bob += dt * 9; }
+  if (mv || sx) { game.x -= (Math.sin(game.yaw) * mv - Math.cos(game.yaw) * sx) * SPD * dt; game.z -= (Math.cos(game.yaw) * mv + Math.sin(game.yaw) * sx) * SPD * dt; game.bob += dt * 9; const sn = Math.floor(game.bob / Math.PI); if (sn !== game.stepN) { game.stepN = sn; step(); } }
   mv = mv || sx;
   game.x = Math.max(-5.2, Math.min(5.2, game.x)); game.z = Math.max(-7.2, Math.min(8, game.z));
   if (Math.abs(game.x) < 2.3 && game.z < -6.9) game.z = -6.9; // the counter desk is solid
@@ -672,6 +682,7 @@ function update3d(dt) {
       if (p >= 1) { game.grab = null; if (g.next) doAct(g.next); } }
     aimArm(RA, RF, T, w);
   }
+  roll(game.trolley && game.trolley.taken && (mv || sx) ? 1 : 0);
   if (game.trolley && game.trolley.taken) { // rolls in front of the shopper, turning with it
     const tg = game.trolley.g, ang = rig.P.rotation.y; const tx = game.x + Math.sin(ang) * .62, tz = game.z + Math.cos(ang) * .62;
     tg.position.set(tx, 0, tz); tg.rotation.y = ang + Math.PI;
@@ -773,7 +784,7 @@ $('#prompt3d').addEventListener('pointerdown', e => { const b = e.target.closest
 function setMission() {
   // a shopping list, in any order: whatever you put in the trolley is crossed off
   const NAMES = { oil: 'ზეთი', batt: 'აკუმულატორი', tyre: 'საბურავი' }, need = game.need || new Set();
-  const m = !game.trolley || !game.trolley.taken ? 'აიღე ურიკა შესასვლელთან' : need.size ? 'საყიდლები: ' + [...need].map(id => NAMES[id]).join(', ') : game.basket.length ? 'სია შევსებულია, გადაიხადე დახლთან' : '';
+  const m = !game.trolley || !game.trolley.taken ? 'აიღე ურიკა შესასვლელთან' : need.size ? 'საყიდლები: ' + [...need].map(id => NAMES[id]).join(', ') : game.basket.length ? 'სია შევსებულია, გადაიხადე სალაროსთან' : '';
   $('#missionTx').textContent = m || 'ყველაფერი ნაყიდია, მადლობა';
   insideEl.classList.toggle('won', !m && !!game.paid);
 }
@@ -835,7 +846,7 @@ function enter() { sfx('door');
 const swapBtn = $('#swapChar'), paintSwap = () => { const o = game.char === 'b' ? 'a' : 'b'; swapBtn.querySelector('img').src = `img/char-${o}.png`; };
 swapBtn.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); setCharacter(game.char === 'b' ? 'a' : 'b'); paintSwap(); }); paintSwap();
 }
-function leave() {
+function leave() { roll(0);
   inside = false; game.on = false; cancelAnimationFrame(loop3d); document.body.classList.remove('playing');
   scr.classList.remove('in', 'entering'); insideEl.setAttribute('aria-hidden', 'true'); $('#shop').hidden = true; insideEl.classList.remove('shopping');
   Object.assign(drive, { v: 0, pos: 0, x: 0, steer: 0, keys: {}, running: false, idle: 0, cruise: false });
