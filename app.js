@@ -479,7 +479,7 @@ function build3d() {
   const desk = new THREE.Mesh(new THREE.BoxGeometry(4.2, 1.05, .8), graphite); desk.position.set(0, .525, -8.1); S3.add(desk);
   const deskTop = new THREE.Mesh(new THREE.BoxGeometry(4.3, .05, .9), plankMat); deskTop.position.set(0, 1.07, -8.1); S3.add(deskTop);
   const deskLed = new THREE.Mesh(new THREE.BoxGeometry(4.2, .02, .02), ledMat); deskLed.position.set(0, .06, -7.69); S3.add(deskLed);
-  const floor = new THREE.Mesh(new THREE.PlaneGeometry(W, D), new THREE.MeshPhongMaterial({ color: 0x3a4a57, specular: 0x9fb8d0, shininess: 90 })); floor.rotation.x = -Math.PI / 2; S3.add(floor);
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(W, D), new THREE.MeshPhongMaterial({ color: 0x3a4a57, specular: phone ? 0x3c4a56 : 0x7f93a6, shininess: phone ? 30 : 60 })); floor.rotation.x = -Math.PI / 2; S3.add(floor);
   const ceil = new THREE.Mesh(new THREE.PlaneGeometry(W, D), new THREE.MeshLambertMaterial({ color: 0x15202a })); ceil.rotation.x = Math.PI / 2; ceil.position.y = H; S3.add(ceil);
   // ceiling: yellow light strips and cool lamps, like the cluster
   // round ceiling lamps in clusters, like the real Tegeta halls

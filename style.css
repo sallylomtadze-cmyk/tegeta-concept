@@ -962,3 +962,12 @@ body.playing .dpad{display:none!important}
 .dash{padding:0;margin-top:40px}
 .screen{box-shadow:0 0 0 1px rgba(219,233,245,.14),0 30px 60px -20px rgba(0,0,0,.75),0 80px 120px -60px rgba(0,0,0,.6)}
 .obj-arrow{pointer-events:auto;cursor:pointer;padding:8px}
+/* nothing may sit between a finger and the 3D scene */
+.inside::before{display:none}
+.inside::after,.walk[hidden]{pointer-events:none}
+.touch-hint{min-width:260px}
+.touch-hint span{white-space:nowrap}
+.shop-cats[hidden]{display:none}
+/* iPhone: no text-selection popup on long press, no double-tap zoom on game buttons */
+.inside,.screen{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+.inside button,.inside .lb3,.obj-arrow,.dpad button{touch-action:manipulation}
