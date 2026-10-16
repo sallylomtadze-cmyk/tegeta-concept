@@ -285,7 +285,7 @@ let inside = false, trip = 0;
 function press(k, down) {
   k = { w: 'ArrowUp', s: 'ArrowDown', a: 'ArrowLeft', d: 'ArrowRight', W: 'ArrowUp', S: 'ArrowDown', A: 'ArrowLeft', D: 'ArrowRight' }[k] || k;
   if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(k)) return false;
-  if (inside) { drive.keys[k] = down; if (down && !game.out) { if (k === 'ArrowUp') getOut(); } return true; }
+  if (inside) { drive.keys[k] = down; if (down) { game.step = game.step || { mv: 0, rot: 0 }; if (k === 'ArrowUp') game.step.mv += .35; if (k === 'ArrowDown') game.step.mv -= .35; if (k === 'ArrowLeft') game.step.rot += .21; if (k === 'ArrowRight') game.step.rot -= .21; game.target = null; } return true; }
   drive.keys[k] = down; if (down && k === 'ArrowUp') drive.cruise = true; if (down && k === 'ArrowDown') drive.cruise = false;
   if (down && !drive.on) { drive.on = true; hero.classList.add('driving'); }
   if (down) wake();
@@ -437,7 +437,12 @@ function build3d() {
   // tyres on the left: standing in rows, rubber with a lighter sidewall ring
   const rubber = new THREE.MeshStandardMaterial({ color: 0x15181b, roughness: .55, metalness: .05 }), rim = new THREE.MeshStandardMaterial({ color: 0x8e99a4, roughness: .35, metalness: .8 });
   const tyres = inst(new THREE.TorusGeometry(.3, .11, 7, 16), rubber, 320), hubs = inst(new THREE.CylinderGeometry(.19, .19, .2, 10), rim, 320);
-  shelfUnit(-1, -8, 16, [.55, 1.45, 2.35, 3.25], (i, x, y, z0, len) => { for (let z = z0 + .35; z < z0 + len - .3; z += .25) { put(tyres, x, y + .41, z, 0); put(hubs, x, y + .41, z, 0, Math.PI / 2); } }); // tread toward the aisle, packed like the real rack
+  // every tyre carries its brand sticker on the tread, like on a real rack
+  const sticker = (name, bg, fg) => { const c = document.createElement('canvas'); c.width = 96; c.height = 256; const x = c.getContext('2d'); x.fillStyle = bg; x.fillRect(0, 0, 96, 256); x.fillStyle = fg; x.translate(48, 128); x.rotate(-Math.PI / 2); x.textAlign = 'center'; x.textBaseline = 'middle'; x.font = 'bold 34px Saira, Arial, sans-serif'; x.fillText(name, 0, 0); const t = new THREE.CanvasTexture(c); t.anisotropy = 4; return inst(new THREE.PlaneGeometry(.1, .26), new THREE.MeshBasicMaterial({ map: t }), 120); };
+  const stk = [sticker('BRIDGESTONE', '#e3e7ea', '#d0021b'), sticker('CONTINENTAL', '#fdb913', '#111111'), sticker('PIRELLI', '#111418', '#fdb913')];
+  let tn = 0;
+  shelfUnit(-1, -8, 16, [.55, 1.45, 2.35, 3.25], (i, x, y, z0, len) => { for (let z = z0 + .35; z < z0 + len - .3; z += .25) { put(tyres, x, y + .41, z, 0); put(hubs, x, y + .41, z, 0, Math.PI / 2); put(stk[Math.floor(tn++ / 4) % 3], x + .413, y + .41, z, Math.PI / 2); } });
+  stk.forEach(m => m.instanceMatrix.needsUpdate = true); // tread toward the aisle, packed like the real rack
   // oils and batteries on the right
   const oilLab = label(['SYNTIUM', '5W-30'], '#1c242b', '#ffffff'), battLab = label(['VARTA', 'BLUE DYNAMIC'], '#1b4fa0', '#ffffff');
   // real brand marks drawn onto the labels once the SVGs load
@@ -525,24 +530,32 @@ const V3 = new THREE.Vector3();
 function update3d(dt) {
   const k = drive.keys, SPD = 3.2, ROT = 1.7;
   if (k.ArrowLeft) game.yaw += ROT * dt; if (k.ArrowRight) game.yaw -= ROT * dt;
+  // a tapped key still moves: the queued step is spent over a few frames so it animates
+  const st = game.step; if (st && st.rot) { const r = Math.sign(st.rot) * Math.min(Math.abs(st.rot), ROT * dt * 2.5); game.yaw += r; st.rot -= r; if (Math.abs(st.rot) < 1e-3) st.rot = 0; }
   let mv = (k.ArrowUp ? 1 : 0) - (k.ArrowDown ? 1 : 0), sx = 0;
+  if (!mv && st && st.mv) { const s = Math.sign(st.mv) * Math.min(Math.abs(st.mv), SPD * dt * 1.6); mv = s / (SPD * dt); st.mv -= s; if (Math.abs(st.mv) < 1e-3) st.mv = 0; }
   if (stick.id != null && (stick.dx || stick.dy)) { mv = Math.max(-1, Math.min(1, -stick.dy / 36)); sx = Math.max(-1, Math.min(1, stick.dx / 36)); }
   if (game.target) { // walking to a tapped point: turn toward it and go, stop when there
     const tx = game.target[0] - game.x, tz = game.target[1] - game.z, d = Math.hypot(tx, tz);
     game.marker.material.opacity *= .97;
-    if (d < .5 || mv || sx) { game.target = null; game.marker.material.opacity = 0; } else { const want = Math.atan2(-tx, -tz); let da = want - game.yaw; da = Math.atan2(Math.sin(da), Math.cos(da)); game.yaw += da * Math.min(1, dt * 6); mv = 1; }
+    if (d < .9 || Math.abs(mv) > .05 || Math.abs(sx) > .05) { game.target = null; game.marker.material.opacity = 0; } else { const want = Math.atan2(-tx, -tz); let da = want - game.yaw; da = Math.atan2(Math.sin(da), Math.cos(da)); game.yaw += da * Math.min(1, dt * 6); mv = 1; }
   }
+  const px0 = game.x, pz0 = game.z, autoWalk = !!game.target;
   if ((mv || sx) && !$('#shop').hidden) { $('#shop').hidden = true; insideEl.classList.remove('shopping'); }
   if (mv || sx) { game.x -= (Math.sin(game.yaw) * mv - Math.cos(game.yaw) * sx) * SPD * dt; game.z -= (Math.cos(game.yaw) * mv + Math.sin(game.yaw) * sx) * SPD * dt; game.bob += dt * 9; }
   mv = mv || sx;
   game.x = Math.max(-5.2, Math.min(5.2, game.x)); game.z = Math.max(-7.2, Math.min(8, game.z));
   if (Math.abs(game.x) < 2.3 && game.z < -6.9) game.z = -6.9; // the counter desk is solid
+  if (!game.trolley.taken) { const tg = game.trolley.g, ddx = game.x - tg.position.x, ddz = game.z - tg.position.z, dd = Math.hypot(ddx, ddz); if (dd < .75) { game.x = tg.position.x + ddx / dd * .75; game.z = tg.position.z + ddz / dd * .75; } } // the parked trolley is solid too
   // third person: the figure walks ahead, the camera follows behind and above, pitch and zoom from the drag
-  const rig = game.rig; rig.P.position.set(game.x, 0, game.z); if (mv || sx) { const want = game.yaw + Math.PI + Math.atan2(sx, mv); let da = want - rig.P.rotation.y; da = Math.atan2(Math.sin(da), Math.cos(da)); rig.P.rotation.y += da * Math.min(1, dt * 12); }
+  if (game.trolley.taken) { const a = game.yaw + Math.PI, tx = game.x + Math.sin(a) * .62, tz = game.z + Math.cos(a) * .62; if (tx > 4.9) game.x -= tx - 4.9; if (tx < -4.9) game.x -= tx + 4.9; if (tz < -7.2) game.z -= tz + 7.2; if (tz > 8) game.z -= tz - 8; if (Math.abs(tx) < 2.4 && tz < -7.55) game.z -= tz + 7.55; }
+  // auto-walk ends when you can't get closer (a rack or the trolley in the way), so it never walks in place
+  if (autoWalk && game.target) { const moved = Math.hypot(game.x - px0, game.z - pz0); game.stuck = moved < SPD * dt * .3 ? (game.stuck || 0) + 1 : 0; if (game.stuck > 6) { game.target = null; game.stuck = 0; game.marker.material.opacity = 0; } }
+  const rig = game.rig; rig.P.position.set(game.x, 0, game.z); if (game.trolley.taken) rig.P.rotation.y = game.yaw + Math.PI; else if (mv || sx) { const want = game.yaw + Math.PI + Math.atan2(sx, mv); let da = want - rig.P.rotation.y; da = Math.atan2(Math.sin(da), Math.cos(da)); rig.P.rotation.y += da * Math.min(1, dt * 12); }
   if (rig.mixer) { rig.mixer.update(dt); play(mv ? 'walk' : 'idle'); if (game.trolley.taken && rig.arms) for (const b of rig.arms) { const L = b.name.includes('Left'); b.rotation.set(-1, 0, L ? -1.4 : 1.4); } if (game.trolley.taken && rig.fore) for (const b of rig.fore) b.rotation.set(0, 0, 0); }
   if (game.trolley && game.trolley.taken) { // rolls in front of the shopper, turning with it
     const tg = game.trolley.g, ang = rig.P.rotation.y; const tx = game.x + Math.sin(ang) * .62, tz = game.z + Math.cos(ang) * .62;
-    tg.position.x += (Math.max(-4.6, Math.min(4.6, tx)) - tg.position.x) * Math.min(1, dt * 8); tg.position.z += (Math.max(-6.6, Math.min(7.6, tz)) - tg.position.z) * Math.min(1, dt * 8); let da = ang + Math.PI - tg.rotation.y; da = Math.atan2(Math.sin(da), Math.cos(da)); tg.rotation.y += da * Math.min(1, dt * 8);
+    tg.position.set(tx, 0, tz); tg.rotation.y = ang + Math.PI;
     if (mv) for (const w of tg.children) if (w.geometry && w.geometry.type === 'CylinderGeometry' && w.position.y < .1) w.rotation.y += dt * 6; // wheels spin
   }
   for (const id in rig.held) rig.held[id].visible = !!game.hand && game.hand.id === id;
@@ -554,10 +567,12 @@ function update3d(dt) {
   // what is in reach: the nearest point within 2.2 m
   let best = null, bd = 2.2;
   const pts = [...ITEMS.map(i => ({ id: i.id, at: i.at, item: i })), ...ZONES];
-  for (const p of pts) { const d = Math.hypot(p.at[0] - game.x, p.at[2] - game.z); if (d < bd) { bd = d; best = p; } }
+  // shelves are reachable along their whole length, not only at one point
+  for (const p of pts) { const d = p.item && Math.abs(game.z) < 7.6 ? Math.abs(p.at[0] - game.x) : Math.hypot(p.at[0] - game.x, p.at[2] - game.z); if (d < bd) { bd = d; best = p; } }
   game.near = best;
   // the objective: the mission item on its shelf, or the counter once you hold it; the beacon and the edge arrow point there
-  const obj = !game.trolley.taken ? ZONES[2] : game.hand ? ZONES[0] : ITEMS[game.mission - 1] || (game.basket.length ? ZONES[0] : ZONES[1]);
+  const needed = ITEMS.filter(i => game.need && game.need.has(i.id)).sort((a, b) => Math.hypot(a.at[0] - game.x, a.at[2] - game.z) - Math.hypot(b.at[0] - game.x, b.at[2] - game.z));
+  const obj = !game.trolley.taken ? ZONES[2] : needed[0] || (game.basket.length ? ZONES[0] : ZONES[1]); game.obj = obj;
   game.beam.position.x = obj.at[0]; game.beam.position.z = obj.at[2]; game.beam.material.opacity = .25 + Math.sin(performance.now() / 300) * .1; game.beam.visible = !(best && best.id === obj.id);
   V3.set(obj.at[0], obj.at[1] + .8, obj.at[2]).project(C3);
   const arrow = $('#objArrow'), onScreen = V3.z < 1 && Math.abs(V3.x) < .95 && Math.abs(V3.y) < .95;
@@ -568,7 +583,7 @@ function update3d(dt) {
   if (game.hand) acts = game.trolley.taken ? [['cart', 'ურიკაში ჩადე'], ['back', 'დადე უკან']] : [['back', 'დადე უკან'], ['need', 'ურიკა შესასვლელთანაა']];
   if (game.hand && rig.held[game.hand.id]) { const hm = rig.held[game.hand.id]; hm.rotation.y += dt * 1.2; } // the shopper turns the product in hand, looking at it
   else if (best) {
-    if (best.item) acts = [['choose', `აირჩიე: ${best.item.shelf}`]];
+    if (best.item) acts = ITEMS.filter(i => Math.sign(i.at[0]) === Math.sign(best.at[0])).map(i => ['choose:' + i.id, `აირჩიე: ${i.shelf}`]);
     else if (best.id === 'trolley') acts = game.trolley.taken ? [] : [['take', 'აიღე ურიკა']];
     else if (best.id === 'counter') acts = game.basket.length ? [['pay', `გადაიხადე ${game.basket.reduce((s, i) => s + i.price, 0).toFixed(2)} ₾`]] : [['book', 'დაჯავშნა და სერვისები']];
     else acts = [['leave', 'ავტომობილთან დაბრუნება']];
@@ -590,8 +605,8 @@ function update3d(dt) {
 function toast(m) { const t = $('#toast'); t.textContent = m; t.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => t.hidden = true, 2600); }
 function doAct(a) {
   const p = game.near;
-  if (a === 'take') { game.trolley.taken = true; sprites.trolleyRing.ring.visible = false; toast('ურიკა შენია, წადი თაროებთან'); if (game.mission === 0) game.mission = 1; setMission(); }
-  else if (a === 'choose' && p && p.item) { shelf('pick:' + p.item.id); $('#shop').hidden = false; insideEl.classList.add('shopping'); }
+  if (a === 'take') { game.trolley.taken = true; sprites.trolleyRing.ring.visible = false; game.need = new Set(ITEMS.map(i => i.id)); toast('ურიკა შენია, სიაში სამი ნივთია'); setMission(); }
+  else if (a.startsWith('choose:')) { shelf('pick:' + a.slice(7)); $('#shop').hidden = false; insideEl.classList.add('shopping'); }
   else if (a === 'back' && game.hand) { game.hand = null; $('#hand').hidden = true; toast('დადე უკან თაროზე'); }
   else if (a === 'need') toast('ურიკა შესასვლელთან დგას');
   else if (a === 'cart' && game.hand && game.trolley.taken) {
@@ -599,7 +614,7 @@ function doAct(a) {
     const n0 = $('#cartN'); n0.textContent = +n0.textContent + 1; n0.classList.add('bump'); setTimeout(() => n0.classList.remove('bump'), 300);
     const src = game.rig.held[it.id], cl = src.clone(); cl.visible = true; const n = game.trolley.cargo.children.length; cl.position.set((n % 2 ? .13 : -.13), .08 + Math.floor(n / 2) * .16, (n % 3 - 1) * .22); cl.rotation.set(0, Math.random(), it.id === 'tyre' ? Math.PI / 2 : 0); cl.scale.setScalar(it.id === 'tyre' ? .55 : .9); game.trolley.cargo.add(cl);
     $('#basketN').textContent = game.basket.length; $('#basket').hidden = false;
-    toast(`ურიკაშია: ${it.name}`); const mi = ITEMS[game.mission - 1]; if (mi && mi.id === it.id) game.mission++; setMission();
+    toast(`ურიკაშია: ${it.name}`); game.need.delete(it.id); setMission();
   }
   else if (a === 'pay' && game.basket.length) {
     const sum = game.basket.reduce((s, i) => s + i.price, 0); game.pts += Math.round(sum); game.paid = (game.paid || 0) + game.basket.length; game.receipt = game.basket.slice(); game.basket = []; $('#basket').hidden = true;
@@ -616,10 +631,12 @@ function pickProduct(type, i) {
 }
 $('#prompt3d').onclick = e => { const b = e.target.closest('button'); if (b) doAct(b.dataset.a); };
 function setMission() {
-  const m = game.mission === 0 ? { task: 'აიღე ურიკა შესასვლელთან' } : ITEMS[game.mission - 1];
-  $('#missionTx').textContent = m ? m.task : game.basket.length ? 'მიდი დახლთან და გადაიხადე კალათა' : 'ყველა დავალება შესრულებულია';
+  // a shopping list, in any order: whatever you put in the trolley is crossed off
+  const NAMES = { oil: 'ზეთი', batt: 'აკუმულატორი', tyre: 'საბურავი' }, need = game.need || new Set();
+  const m = !game.trolley || !game.trolley.taken ? 'აიღე ურიკა შესასვლელთან' : need.size ? 'საყიდლები: ' + [...need].map(id => NAMES[id]).join(', ') : game.basket.length ? 'სია შევსებულია, გადაიხადე დახლთან' : '';
+  $('#missionTx').textContent = m || 'ყველაფერი ნაყიდია, მადლობა';
   $('#missionPts').textContent = `${game.pts} PLUS ქულა`;
-  insideEl.classList.toggle('won', !m && !game.basket.length && !!game.paid);
+  insideEl.classList.toggle('won', !m && !!game.paid);
 }
 let loop3d = 0, last3d = 0;
 let frames3d = 0;
@@ -664,7 +681,7 @@ function tapWalk(e) {
   const ray = new THREE.Raycaster(); ray.setFromCamera({ x: px, y: py }, C3);
   const hit = new THREE.Vector3(); if (ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), hit)) { game.target = [Math.max(-5.6, Math.min(5.6, hit.x)), Math.max(-7.2, Math.min(8, hit.z))]; game.marker.position.set(game.target[0], .02, game.target[1]); game.marker.material.opacity = .9; }
 }
-$('#labels3d').addEventListener('pointerup', e => { const l = e.target.closest('.lb3'); if (!l) return; e.stopPropagation(); const p = [...ITEMS, ...ZONES].find(x => x.id === l.dataset.id); if (p) { game.target = [p.at[0], p.at[2]]; wake3d(); } });
+$('#labels3d').addEventListener('pointerup', e => { if (e.target.closest('.obj-arrow') && game.obj) { e.stopPropagation(); game.step = null; game.target = [game.obj.at[0], game.obj.at[2]]; return; } const l = e.target.closest('.lb3'); if (!l) return; e.stopPropagation(); const p = [...ITEMS, ...ZONES].find(x => x.id === l.dataset.id); if (p) { game.target = [p.at[0], p.at[2]]; wake3d(); } });
 function wake3d() { /* the loop runs while inside; nothing to wake */ }
 // straight into the store: a short blink, as if stepping out of the car
 function getOut() { if (game.out) return; game.out = true; if (!getOut.shown) { getOut.shown = true; $('#touchHint').hidden = false; $('#keysHint').classList.add('show'); setTimeout(() => { $('#touchHint').hidden = true; $('#keysHint').classList.remove('show'); }, 6000); } insideEl.classList.add('door'); setTimeout(() => insideEl.classList.remove('door'), 900); game.on = true; last3d = 0; loop3d = requestAnimationFrame(frame3d); }
@@ -672,7 +689,7 @@ function enter() {
   inside = true; drive.keys = {}; drive.v = 0; drive.cruise = false; game.out = false; game.on = false;
   scr.classList.add('entering'); render(); hud(0);
   setFs(true); document.body.classList.add('playing'); insideEl.classList.remove('rendered'); frames3d = 0;
-  setTimeout(() => { scr.classList.add('in'); insideEl.setAttribute('aria-hidden', 'false'); $('#walk').hidden = true; try { if (!game.ready) build3d(); size3d(); } catch (e) { showErr(e); } Object.assign(game, { x: 0, z: 5.2, yaw: .35, hand: null, basket: [], mission: 0 }); if (game.trolley) { game.trolley.taken = false; game.trolley.g.position.set(-1.6, 0, 3.4); game.trolley.g.rotation.y = Math.PI; game.trolley.cargo.clear(); sprites.trolleyRing.ring.visible = true; } $('#basket').hidden = true; $('#hand').hidden = true; setMission(); getOut(); }, 700);
+  setTimeout(() => { scr.classList.add('in'); insideEl.setAttribute('aria-hidden', 'false'); $('#walk').hidden = true; try { if (!game.ready) build3d(); size3d(); } catch (e) { showErr(e); } Object.assign(game, { x: 0, z: 5.2, yaw: .35, hand: null, basket: [], need: new Set(ITEMS.map(i => i.id)) }); if (game.trolley) { game.trolley.taken = false; game.trolley.g.position.set(-1.6, 0, 3.4); game.trolley.g.rotation.y = Math.PI; game.trolley.cargo.clear(); sprites.trolleyRing.ring.visible = true; } $('#basket').hidden = true; $('#hand').hidden = true; setMission(); getOut(); }, 700);
 }
 function leave() {
   inside = false; game.on = false; cancelAnimationFrame(loop3d); setFs(false); document.body.classList.remove('playing');
