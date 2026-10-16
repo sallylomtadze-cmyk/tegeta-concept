@@ -467,12 +467,12 @@ function build3d() {
   const mirror = new THREE.Reflector(new THREE.PlaneGeometry(W, D), { textureWidth: phone ? 384 : 640, textureHeight: phone ? 384 : 640, color: 0x5e7284, clipBias: .003 }); mirror.rotation.x = -Math.PI / 2; mirror.position.y = -.005; S3.add(mirror);
   floor.material.transparent = true; floor.material.opacity = .72;
   // soft skirting: a dark gradient at the base of every wall, so photo and floor melt into each other instead of a hard seam
-  const gc = document.createElement('canvas'); gc.width = 4; gc.height = 128; const gx = gc.getContext('2d'); const gg = gx.createLinearGradient(0, 0, 0, 128); gg.addColorStop(0, 'rgba(14,22,30,0)'); gg.addColorStop(.55, 'rgba(14,22,30,.55)'); gg.addColorStop(1, 'rgba(14,22,30,.95)'); gx.fillStyle = gg; gx.fillRect(0, 0, 4, 128);
-  const skirtTex = new THREE.CanvasTexture(gc), skirt = (w, pos, ry) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, 1.1), new THREE.MeshBasicMaterial({ map: skirtTex, transparent: true, depthWrite: false })); m.position.set(...pos); m.rotation.y = ry; S3.add(m); };
-  skirt(W, [0, .55, -D / 2 + .02], 0); skirt(W, [0, .55, D / 2 - .02], Math.PI);
+  const gc = document.createElement('canvas'); gc.width = 4; gc.height = 128; const gx = gc.getContext('2d'); const gg = gx.createLinearGradient(0, 0, 0, 128); gg.addColorStop(0, 'rgba(14,22,30,0)'); gg.addColorStop(.6, 'rgba(14,22,30,.18)'); gg.addColorStop(1, 'rgba(14,22,30,.5)'); gx.fillStyle = gg; gx.fillRect(0, 0, 4, 128);
+  const skirtTex = new THREE.CanvasTexture(gc), skirt = (w, pos, ry) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, .7), new THREE.MeshBasicMaterial({ map: skirtTex, transparent: true, depthWrite: false })); m.position.set(...pos); m.rotation.y = ry; S3.add(m); };
+  skirt(W, [0, .35, -D / 2 + .02], 0); skirt(W, [0, .35, D / 2 - .02], Math.PI);
   // and a soft floor shadow along the walls
-  const fs = (w, pos, rz) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, 1.6), new THREE.MeshBasicMaterial({ map: skirtTex, transparent: true, depthWrite: false, opacity: .8 })); m.rotation.x = -Math.PI / 2; m.rotation.z = rz; m.position.set(...pos); S3.add(m); };
-  fs(W, [0, .012, -D / 2 + .8], Math.PI); fs(W, [0, .012, D / 2 - .8], 0);
+  const fs = (w, pos, rz) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, 1.2), new THREE.MeshBasicMaterial({ map: skirtTex, transparent: true, depthWrite: false, opacity: .45 })); m.rotation.x = -Math.PI / 2; m.rotation.z = rz; m.position.set(...pos); S3.add(m); };
+  fs(W, [0, .012, -D / 2 + .6], Math.PI); fs(W, [0, .012, D / 2 - .6], 0);
   const fill = new THREE.PointLight(0xdfe9f3, .7, 7); C3.add(fill); S3.add(C3); // a soft light travels with the camera so the shopper reads clearly
   // pick-up points and the counter: a 3D icon floating at the shelf with a soft ring
   const mk = (id, ic, at) => { const t = T.load(ic ? ic : 'img/logo.svg'); const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, transparent: true })); sp.scale.set(1.1, 1.1, 1); sp.position.set(...at); S3.add(sp);
