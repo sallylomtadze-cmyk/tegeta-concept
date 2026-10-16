@@ -1027,3 +1027,6 @@ body:not(.fs) .scr-top #clk{margin-right:44px}
   .inside .hand{top:auto!important;left:auto!important;right:12px!important;bottom:calc(132px + env(safe-area-inset-bottom,0px))!important}.inside .hand span{max-width:140px}
   .inside .mission{max-width:calc(100% - 104px)}}
 .inside.shopping .stick,.inside.shopping .swap-char{visibility:hidden}
+/* arrival shot: the HUD waits until the camera has settled */
+.inside .mission,.inside .prompt3d,.inside #labels3d,.inside .stick,.inside .swap-char,.inside .basket{transition:opacity .5s}
+.inside.intro .mission,.inside.intro .prompt3d,.inside.intro #labels3d,.inside.intro .stick,.inside.intro .swap-char,.inside.intro .touch-hint,.inside.intro .obj-arrow{opacity:0;pointer-events:none}

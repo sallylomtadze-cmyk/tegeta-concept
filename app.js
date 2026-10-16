@@ -448,15 +448,23 @@ function build3d() {
   shelfUnit(-1, -8, 16, [.55, 1.45, 2.35, 3.25], (i, x, y, z0, len) => { for (let z = z0 + .4; z < z0 + len - .35; z += .26) put(tyreSets[Math.floor(tn++ / 7) % 3], x, y + .41, z, .5); });
   tyreSets.forEach(m => m.instanceMatrix.needsUpdate = true);
   // oils and batteries on the right
-  const oilLab = label(['SYNTIUM', '5W-30'], '#1c242b', '#ffffff'), battLab = label(['VARTA', 'BLUE DYNAMIC'], '#1b4fa0', '#ffffff');
+  // product labels drawn like the real packs: PETRONAS teal band and grade, VARTA blue with the spec strip
+  const pack = (w, h, draw) => { const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h); const t = new THREE.CanvasTexture(c); t.anisotropy = 8; return t; };
+  const oilLab = pack(256, 160, (x, w, h) => { let g = x.createLinearGradient(0, 0, w, 0); g.addColorStop(0, '#2b333b'); g.addColorStop(.5, '#4a545e'); g.addColorStop(1, '#2b333b'); x.fillStyle = g; x.fillRect(0, 0, w, h);
+    x.fillStyle = '#e9eef1'; x.fillRect(0, 0, w, 52); x.fillStyle = '#00a19a'; x.fillRect(0, 52, w, 5); x.font = 'bold 22px Saira, Arial, sans-serif'; x.textBaseline = 'middle'; x.fillText('PETRONAS', 62, 27);
+    x.fillStyle = '#fff'; x.textAlign = 'left'; x.textBaseline = 'alphabetic'; x.font = 'bold 30px Saira, Arial, sans-serif'; x.fillText('SYNTIUM', 16, 96); x.font = '600 15px Saira, Arial, sans-serif'; x.fillStyle = '#c9d2da'; x.fillText('5000 · FULLY SYNTHETIC', 16, 118);
+    x.fillStyle = '#fdb913'; x.font = 'bold 26px Saira, Arial, sans-serif'; x.fillText('5W-30', 16, 150); x.textAlign = 'right'; x.fillStyle = '#fff'; x.font = 'bold 22px Saira, Arial, sans-serif'; x.fillText('4L', w - 14, 150); });
+  const battLab = pack(256, 94, (x, w, h) => { const g = x.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#2366c4'); g.addColorStop(1, '#123a7a'); x.fillStyle = g; x.fillRect(0, 0, w, h);
+    x.fillStyle = '#fff'; x.textBaseline = 'alphabetic'; x.textAlign = 'left'; x.font = 'italic 900 32px Saira, Arial, sans-serif'; x.fillText('VARTA', 14, 34); x.font = '600 14px Saira, Arial, sans-serif'; x.fillStyle = '#9fd0ff'; x.fillText('BLUE dynamic', 130, 32);
+    x.fillStyle = '#f2f4f6'; x.fillRect(0, 56, w, 38); x.fillStyle = '#123a7a'; x.font = 'bold 19px Saira, Arial, sans-serif'; x.fillText('12V   60Ah   540A', 14, 82); x.fillStyle = '#fdb913'; x.fillRect(0, 52, w, 4); });
   // real brand marks drawn onto the labels once the SVGs load
   const brandOn = (tex, src, x, y, w, h) => { const im = new Image(); im.onload = () => { const c = tex.image, cx = c.getContext('2d'); cx.drawImage(im, x, y, w, h); tex.needsUpdate = true; }; im.src = src; };
-  brandOn(oilLab, 'img/brands/petronas.svg', 8, 6, 60, 44);
+  brandOn(oilLab, 'img/brands/petronas.svg', 14, 6, 40, 41);
   // tyre brands on a sign along the rack
   ['bridgestone', 'continental', 'pirelli'].forEach((b, i) => { const im = new Image(); im.onload = () => { const c = document.createElement('canvas'); c.width = 512; c.height = 128; const x = c.getContext('2d'); x.fillStyle = '#121a21'; x.fillRect(0, 0, 512, 128); x.fillStyle = '#fff'; x.fillRect(0, 118, 512, 10); x.fillStyle = '#fdb913'; x.fillRect(0, 118, 512, 4); const s = Math.min(420 / im.width, 80 / im.height); x.drawImage(im, 256 - im.width * s / 2, 64 - im.height * s / 2, im.width * s, im.height * s); const t = new THREE.CanvasTexture(c); const m = new THREE.Mesh(new THREE.PlaneGeometry(4.6, 1.15), new THREE.MeshBasicMaterial({ map: t })); m.position.set(-W / 2 + .12, 3.75, -5.3 + i * 5.3); m.rotation.y = Math.PI / 2; S3.add(m); }; im.src = `img/brands/${b}.svg`; });
   const canMat = new THREE.MeshStandardMaterial({ color: 0x2b333a, roughness: .45, metalness: .15, emissive: 0x0d1216, emissiveIntensity: .5 }), capMat = new THREE.MeshStandardMaterial({ color: 0xfdb913, roughness: .35 });
   const cans = inst(new THREE.BoxGeometry(.19, .3, .13, 1, 1, 1), canMat, 160), caps = inst(new THREE.CylinderGeometry(.04, .04, .05, 6), capMat, 160), canLabels = inst(new THREE.PlaneGeometry(.17, .11), new THREE.MeshBasicMaterial({ map: oilLab }), 160);
-  const battMat = new THREE.MeshStandardMaterial({ color: 0x2b3136, roughness: .6, emissive: 0x101418, emissiveIntensity: .4 }), batts = inst(new THREE.BoxGeometry(.34, .2, .2), battMat, 80), battTops = inst(new THREE.BoxGeometry(.34, .02, .2), new THREE.MeshStandardMaterial({ color: 0x1b4fa0, roughness: .5 }), 80), battLabels = inst(new THREE.PlaneGeometry(.3, .11), new THREE.MeshBasicMaterial({ map: battLab }), 80), poles = inst(new THREE.CylinderGeometry(.02, .02, .03, 5), rim, 160);
+  const battMat = new THREE.MeshStandardMaterial({ color: 0x2b3136, roughness: .6, emissive: 0x101418, emissiveIntensity: .4 }), batts = inst(new THREE.BoxGeometry(.2, .2, .34), battMat, 80), battTops = inst(new THREE.BoxGeometry(.2, .02, .34), new THREE.MeshStandardMaterial({ color: 0x1b4fa0, roughness: .5 }), 80), battLabels = inst(new THREE.PlaneGeometry(.3, .11), new THREE.MeshBasicMaterial({ map: battLab }), 80), poles = inst(new THREE.CylinderGeometry(.02, .02, .03, 5), rim, 160);
   shelfUnit(1, -8, 16, [.55, 1.35, 2.15, 2.95], (i, x, y, z0, len) => {
     if (i >= 2) for (let z = z0 + .3; z < z0 + len - .2; z += .24) { put(cans, x + .15, y + .15, z); put(caps, x + .15, y + .325, z - .035); put(canLabels, x + .15 - .066, y + .15, z, -Math.PI / 2); }
     else for (let z = z0 + .35; z < z0 + len - .3; z += .42) { put(batts, x + .1, y + .1, z); put(battTops, x + .1, y + .21, z); put(poles, x + .1, y + .235, z - .12); put(poles, x + .1, y + .235, z + .12); put(battLabels, x + .1 - .101, y + .1, z, -Math.PI / 2); }
@@ -464,7 +472,7 @@ function build3d() {
   [cans, caps, canLabels, batts, battTops, battLabels, poles].forEach(m => m.instanceMatrix.needsUpdate = true);
   // the same products as single meshes, to carry in the hand
   const heldOil = new THREE.Group(); heldOil.add(new THREE.Mesh(cans.geometry, canMat)); const hc = new THREE.Mesh(caps.geometry, capMat); hc.position.set(0, .17, -.03); heldOil.add(hc); const hl = new THREE.Mesh(canLabels.geometry, canLabels.material); hl.position.z = .066; heldOil.add(hl);
-  const heldBatt = new THREE.Group(); heldBatt.add(new THREE.Mesh(batts.geometry, battMat)); const bt = new THREE.Mesh(battTops.geometry, battTops.material); bt.position.y = .11; heldBatt.add(bt); const bl = new THREE.Mesh(battLabels.geometry, battLabels.material); bl.position.z = .101; heldBatt.add(bl);
+  const heldBatt = new THREE.Group(); heldBatt.add(new THREE.Mesh(batts.geometry, battMat)); const bt = new THREE.Mesh(battTops.geometry, battTops.material); bt.position.y = .11; heldBatt.add(bt); const bl = new THREE.Mesh(battLabels.geometry, battLabels.material); bl.position.x = -.101; bl.rotation.y = -Math.PI / 2; // long side faces the aisle, like on the shelf heldBatt.add(bl);
   const heldTyre = new THREE.Group(); heldTyre.add(new THREE.Mesh(tyreGeo, tyreSets[0].material)); heldTyre.scale.setScalar(.8);
   [heldOil, heldBatt, heldTyre].forEach(g => { g.visible = false; S3.add(g); }); game.heldMeshes = { oil: heldOil, batt: heldBatt, tyre: heldTyre };
   // the shopping trolley: a tapered wire basket on a chrome frame, yellow handle, swivel casters; parked by the entrance until you take it
@@ -508,9 +516,15 @@ function build3d() {
   const glassMat = new THREE.MeshBasicMaterial({ color: 0x9cc6e6, transparent: true, opacity: .1, depthWrite: false, side: THREE.DoubleSide });
   const glass = new THREE.Mesh(new THREE.PlaneGeometry(W, H), glassMat); glass.position.set(0, H / 2, D / 2); S3.add(glass);
   const frameMat = new THREE.MeshStandardMaterial({ color: 0x1a232b, roughness: .5, metalness: .6 });
-  for (let xx = -W / 2; xx <= W / 2 + .01; xx += 1.75) { const m = new THREE.Mesh(new THREE.BoxGeometry(.07, H, .1), frameMat); m.position.set(xx, H / 2, D / 2); S3.add(m); }
+  for (let xx = -W / 2; xx <= W / 2 + .01; xx += 1.75) { if (Math.abs(xx) < 1.3) continue; const m = new THREE.Mesh(new THREE.BoxGeometry(.07, H, .1), frameMat); m.position.set(xx, H / 2, D / 2); S3.add(m); }
   for (const yy of [.04, 2.6, H - .04]) { const m = new THREE.Mesh(new THREE.BoxGeometry(W, .07, .1), frameMat); m.position.set(0, yy, D / 2); S3.add(m); }
   const doorTop = new THREE.Mesh(new THREE.BoxGeometry(2.4, .05, .08), new THREE.MeshBasicMaterial({ color: 0xffc534 })); doorTop.position.set(0, 2.66, D / 2 - .06); S3.add(doorTop);
+  // two automatic sliding leaves: framed glass, they part as you come in and when you walk up to them
+  const leafGlass = new THREE.MeshBasicMaterial({ color: 0xbfe0f5, transparent: true, opacity: .16, depthWrite: false, side: THREE.DoubleSide });
+  game.doors = [-1, 1].map(sd => { const g = new THREE.Group(), pane = new THREE.Mesh(new THREE.PlaneGeometry(1.15, 2.58), leafGlass); pane.position.y = 1.31; g.add(pane);
+    [[-.57, 1.31, .05, 2.6], [.57, 1.31, .05, 2.6], [0, .03, 1.19, .06], [0, 2.59, 1.19, .05]].forEach(([x, y, w, h]) => { const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, .06), frameMat); b.position.set(x, y, 0); g.add(b); });
+    const pull = new THREE.Mesh(new THREE.BoxGeometry(.03, .6, .05), new THREE.MeshBasicMaterial({ color: 0xffc534 })); pull.position.set(-sd * .5, 1.1, 0); g.add(pull);
+    g.position.set(sd * .6, 0, D / 2 - .03); S3.add(g); return g; });
   // outside: dusk sky, the parking lot with lines, a row of light poles
   const sky = document.createElement('canvas'); sky.width = 4; sky.height = 256; { const x = sky.getContext('2d'), g = x.createLinearGradient(0, 0, 0, 256); g.addColorStop(0, '#0b1622'); g.addColorStop(.55, '#2c4a66'); g.addColorStop(.8, '#c98a52'); g.addColorStop(1, '#3a3530'); x.fillStyle = g; x.fillRect(0, 0, 4, 256); }
   const skyM = new THREE.Mesh(new THREE.PlaneGeometry(80, 26), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(sky), fog: false })); skyM.position.set(0, 9, D / 2 + 26); skyM.rotation.y = Math.PI; S3.add(skyM);
@@ -671,6 +685,11 @@ function update3d(dt) {
   game.fovKick = (game.fovKick || 0) + ((mv ? 1 : 0) - (game.fovKick || 0)) * Math.min(1, dt * 3); C3.fov = (scr.clientWidth < scr.clientHeight ? 74 : 72) + game.fovKick * 4; C3.updateProjectionMatrix();
   C3.position.x = Math.max(-6.6, Math.min(6.6, C3.position.x)); C3.position.z = Math.max(-8.6, Math.min(8.6, C3.position.z)); C3.position.y = Math.max(.6, Math.min(3.9, C3.position.y));
   C3.lookAt(game.x + fx * 1.5, scr.clientWidth < scr.clientHeight ? .9 : 1.2, game.z + fz * 1.5);
+  // arrival shot: the camera starts in the car park, the doors part, it glides in and settles behind the shopper
+  if (game.intro < 1) { game.intro = Math.min(1, game.intro + dt / 2.8); const e = 1 - Math.pow(1 - game.intro, 3), to = C3.position.clone();
+    C3.position.set(0, 2.1, 15).lerp(to, e); V3.set(0, 1.5, 2).lerp(new THREE.Vector3(game.x + fx * 1.5, scr.clientWidth < scr.clientHeight ? .9 : 1.2, game.z + fz * 1.5), e); C3.lookAt(V3);
+    if (game.intro >= 1) insideEl.classList.remove('intro'); }
+  if (game.doors) { const want = game.intro < .7 || game.z > 6.6 ? 1 : 0; game.doorO = (game.doorO || 0) + (want - (game.doorO || 0)) * Math.min(1, dt * 3); game.doors.forEach((g, i) => g.position.x = (i ? 1 : -1) * (.6 + game.doorO * 1.15)); }
   // what is in reach: the nearest point within 2.2 m
   let best = null, bd = 2.2;
   const pts = [...ITEMS.map(i => ({ id: i.id, at: i.at, item: i })), ...ZONES];
@@ -769,7 +788,7 @@ function showErr(e) { const t = $('#toast'); t.hidden = false; t.style.whiteSpac
 // touch like Roblox: a thumb on the left half is a joystick that walks, a thumb on the right half looks around, two fingers pinch to zoom; a tap on a shelf walks there
 function moveStick(e) { let dx = e.clientX - stick.x0, dy = e.clientY - stick.y0; const d = Math.hypot(dx, dy), R = 40; if (d > R) { dx *= R / d; dy *= R / d; } stick.dx = dx; stick.dy = dy; $('#stick i').style.transform = `translate(${dx}px,${dy}px)`; }
 const cv3 = $('#store3d'), touches = {}, stick = { id: null, x0: 0, y0: 0, dx: 0, dy: 0 }, look = { id: null, x: 0, y: 0, moved: 0 };
-cv3.addEventListener('pointerdown', e => {
+cv3.addEventListener('pointerdown', e => { if (game.intro < 1) game.intro = Math.max(game.intro, .8);
   $('#touchHint').hidden = true;
   touches[e.pointerId] = [e.clientX, e.clientY]; try { cv3.setPointerCapture(e.pointerId); } catch (x) {}
   // the joystick is fixed bottom-left (like mobile games); a thumb on or near it steers, measured from its centre
@@ -811,7 +830,7 @@ function enter() { sfx('door');
   inside = true; drive.keys = {}; drive.v = 0; drive.cruise = false; game.out = false; game.on = false;
   scr.classList.add('entering'); render(); hud(0);
   setFs(true); document.body.classList.add('playing'); insideEl.classList.remove('rendered'); frames3d = 0;
-  setTimeout(() => { scr.classList.add('in'); insideEl.setAttribute('aria-hidden', 'false'); $('#walk').hidden = true; try { if (!game.ready) build3d(); size3d(); } catch (e) { showErr(e); } Object.assign(game, { x: 0, z: 5.2, yaw: .35, hand: null, basket: [], need: new Set(ITEMS.map(i => i.id)) }); if (game.rig) game.rig.P.rotation.y = game.yaw + Math.PI; if (game.trolley) { game.trolley.taken = false; game.trolley.g.position.set(-1.6, 0, 3.4); game.trolley.g.rotation.y = Math.PI; game.trolley.cargo.clear(); sprites.trolleyRing.ring.visible = true; } $('#basket').hidden = true; $('#hand').hidden = true; setMission(); getOut(); }, 700);
+  setTimeout(() => { scr.classList.add('in'); insideEl.setAttribute('aria-hidden', 'false'); $('#walk').hidden = true; try { if (!game.ready) build3d(); size3d(); } catch (e) { showErr(e); } game.intro = 0; insideEl.classList.add('intro'); Object.assign(game, { x: 0, z: 5.2, yaw: .35, hand: null, basket: [], need: new Set(ITEMS.map(i => i.id)) }); if (game.rig) game.rig.P.rotation.y = game.yaw + Math.PI; if (game.trolley) { game.trolley.taken = false; game.trolley.g.position.set(-1.6, 0, 3.4); game.trolley.g.rotation.y = Math.PI; game.trolley.cargo.clear(); sprites.trolleyRing.ring.visible = true; } $('#basket').hidden = true; $('#hand').hidden = true; setMission(); getOut(); }, 700);
 // one button swaps the shopper; it shows the one you'd switch to
 const swapBtn = $('#swapChar'), paintSwap = () => { const o = game.char === 'b' ? 'a' : 'b'; swapBtn.querySelector('img').src = `img/char-${o}.png`; };
 swapBtn.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); setCharacter(game.char === 'b' ? 'a' : 'b'); paintSwap(); }); paintSwap();
@@ -827,6 +846,7 @@ $('#hintClose').onclick = () => { $('#touchHint').hidden = true; };
 const closeShop = () => { $('#shop').hidden = true; insideEl.classList.remove('shopping'); };
 $('#shopClose').onclick = closeShop;
 // Enter and space also act, so no one has to guess the key
+addEventListener('keydown', () => { if (inside && game.intro < 1) game.intro = Math.max(game.intro, .8); });
 addEventListener('keydown', e => { if (inside && ['Enter', ' ', 'Backspace', 'e', 'E'].includes(e.key)) { drive.keys[e.key.length === 1 && e.key !== ' ' ? e.key.toLowerCase() : e.key] = true; e.preventDefault(); } });
 addEventListener('keydown', e => { if (e.key === 'Escape' && inside) { if (!$('#shop').hidden) closeShop(); else leave(); } });
 addEventListener('resize', size3d);
