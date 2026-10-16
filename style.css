@@ -548,7 +548,7 @@ body{background:radial-gradient(ellipse 120% 50% at 50% 0,#17242f,transparent 70
 .screen .lights{mix-blend-mode:screen;opacity:.7}
 /* readouts */
 .scr-top{position:absolute;left:28px;right:28px;top:18px;z-index:3;display:grid;grid-template-columns:1fr auto auto 1fr;align-items:center;gap:300px;font-size:18px;font-weight:300}
-.scr-top #clk{justify-self:end;margin-right:44px}
+.scr-top #clk{justify-self:end}
 .sig{width:24px;height:20px;background:rgba(255,255,255,.85);clip-path:polygon(0 50%,45% 0,45% 28%,100% 28%,100% 72%,45% 72%,45% 100%)}
 .sig.r{transform:scaleX(-1)}
 .sig.on{background:var(--y);animation:blink .7s steps(1) infinite;filter:drop-shadow(0 0 6px rgba(253,185,19,.7))}
