@@ -957,3 +957,7 @@ body.playing .dpad{display:none!important}
 .si small{display:block;font-size:11px;color:var(--mut);margin-top:2px}
 .hand span{font-size:11.5px;max-width:200px;line-height:1.35}.hand span b{font-size:12px}.hand .num{color:var(--y)}
 .in-exit,.fs-btn,.hint-x,.shop-x{padding:0;line-height:0}.in-exit .i,.fs-btn .i{width:18px;height:18px;margin:0}
+/* no flat bezel under the screen: a soft, natural drop shadow instead */
+.bezel{display:none}
+.dash{padding:0;margin-top:40px}
+.screen{box-shadow:0 0 0 1px rgba(219,233,245,.14),0 30px 60px -20px rgba(0,0,0,.75),0 80px 120px -60px rgba(0,0,0,.6)}
