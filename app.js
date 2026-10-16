@@ -647,17 +647,19 @@ function frame3d(ts) { if (!inside || !game.on) return; const dt = Math.min(.05,
   loop3d = requestAnimationFrame(frame3d); }
 function showErr(e) { const t = $('#toast'); t.hidden = false; t.style.whiteSpace = 'normal'; t.textContent = 'შეცდომა: ' + (e && e.message || e); t.dataset.stack = (e && e.stack || '').slice(0, 600); console.error(e); }
 // touch like Roblox: a thumb on the left half is a joystick that walks, a thumb on the right half looks around, two fingers pinch to zoom; a tap on a shelf walks there
+function moveStick(e) { let dx = e.clientX - stick.x0, dy = e.clientY - stick.y0; const d = Math.hypot(dx, dy), R = 40; if (d > R) { dx *= R / d; dy *= R / d; } stick.dx = dx; stick.dy = dy; $('#stick i').style.transform = `translate(${dx}px,${dy}px)`; }
 const cv3 = $('#store3d'), touches = {}, stick = { id: null, x0: 0, y0: 0, dx: 0, dy: 0 }, look = { id: null, x: 0, y: 0, moved: 0 };
 cv3.addEventListener('pointerdown', e => {
   $('#touchHint').hidden = true; $('#keysHint').classList.remove('show');
   touches[e.pointerId] = [e.clientX, e.clientY]; try { cv3.setPointerCapture(e.pointerId); } catch (x) {}
-  const r = cv3.getBoundingClientRect(), left = e.clientX - r.left < r.width * .45;
-  if (e.pointerType !== 'mouse' && left && stick.id == null) { Object.assign(stick, { id: e.pointerId, x0: e.clientX, y0: e.clientY, dx: 0, dy: 0 }); $('#stick').hidden = false; $('#stick').style.left = e.clientX - r.left + 'px'; $('#stick').style.top = e.clientY - r.top + 'px'; }
+  // the joystick is fixed bottom-left (like mobile games); a thumb on or near it steers, measured from its centre
+  const sr = $('#stick').getBoundingClientRect(), onStick = sr.width > 0 && e.clientX > sr.left - 36 && e.clientX < sr.right + 36 && e.clientY > sr.top - 36 && e.clientY < sr.bottom + 36;
+  if (onStick && stick.id == null) { Object.assign(stick, { id: e.pointerId, x0: sr.left + sr.width / 2, y0: sr.top + sr.height / 2, dx: 0, dy: 0 }); $('#stick').classList.add('on'); moveStick(e); game.target = null; }
   else if (look.id == null) Object.assign(look, { id: e.pointerId, x: e.clientX, y: e.clientY, moved: 0 });
 });
 cv3.addEventListener('pointermove', e => {
   if (!touches[e.pointerId]) return; touches[e.pointerId] = [e.clientX, e.clientY];
-  if (e.pointerId === stick.id) { stick.dx = Math.max(-60, Math.min(60, e.clientX - stick.x0)); stick.dy = Math.max(-60, Math.min(60, e.clientY - stick.y0)); $('#stick i').style.transform = `translate(${stick.dx}px,${stick.dy}px)`; return; }
+  if (e.pointerId === stick.id) { moveStick(e); return; }
   const ids = Object.keys(touches).filter(i => +i !== stick.id);
   if (ids.length >= 2) { const [a, b] = ids.map(i => touches[i]); const dist = Math.hypot(a[0] - b[0], a[1] - b[1]); if (game.pinch) game.zoom = Math.max(1.4, Math.min(5, game.zoom * game.pinch / dist)); game.pinch = dist; look.moved = 99; return; }
   if (e.pointerId === look.id) {
@@ -667,7 +669,7 @@ cv3.addEventListener('pointermove', e => {
 });
 ['pointerup', 'pointercancel'].forEach(t => cv3.addEventListener(t, e => {
   delete touches[e.pointerId]; game.pinch = null;
-  if (e.pointerId === stick.id) { stick.id = null; stick.dx = stick.dy = 0; $('#stick').hidden = true; $('#stick i').style.transform = ''; }
+  if (e.pointerId === stick.id) { stick.id = null; stick.dx = stick.dy = 0; $('#stick').classList.remove('on'); $('#stick i').style.transform = ''; }
   if (e.pointerId === look.id) { if (look.moved < 8) tapWalk(e); look.id = null; }
 }));
 cv3.addEventListener('wheel', e => { e.preventDefault(); game.zoom = Math.max(1.4, Math.min(5, game.zoom + e.deltaY * .004)); }, { passive: false });
