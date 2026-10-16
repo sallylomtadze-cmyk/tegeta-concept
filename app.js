@@ -777,7 +777,7 @@ const swapBtn = $('#swapChar'), paintSwap = () => { const o = game.char === 'b' 
 swapBtn.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); setCharacter(game.char === 'b' ? 'a' : 'b'); paintSwap(); }); paintSwap();
 }
 function leave() {
-  inside = false; game.on = false; cancelAnimationFrame(loop3d); setFs(false); document.body.classList.remove('playing');
+  inside = false; game.on = false; cancelAnimationFrame(loop3d); document.body.classList.remove('playing');
   scr.classList.remove('in', 'entering'); insideEl.setAttribute('aria-hidden', 'true'); $('#shop').hidden = true; insideEl.classList.remove('shopping');
   Object.assign(drive, { v: 0, pos: 0, x: 0, steer: 0, keys: {}, running: false, idle: 0, cruise: false });
   render(); hud(0);
@@ -845,6 +845,7 @@ function setFs(on) { document.body.classList.toggle('fs', on); $('#fsBtn').class
 $('#fsBtn').onclick = e => { if (e.detail === 0 && inside) return; setFs(!document.body.classList.contains('fs')); }; // keyboard Enter never toggles it while playing
 $('#fsBtn').addEventListener('keydown', e => { if (inside) e.preventDefault(); });
 addEventListener('keydown', e => { if (e.key === 'f' || e.key === 'F') $('#fsBtn').click(); });
+setFs(true); // the game opens full screen; the corner button takes you back to the page
 
 // #store opens the page already inside the shop (handy for sharing and testing)
 if (location.hash === '#store' || location.hash === '#shop') setTimeout(() => { drive.pos = TRACK; enter(); if (location.hash === '#shop') setTimeout(() => { shelf('deal'); $('#shop').hidden = false; insideEl.classList.add('shopping'); }, 1200); }, 300);
