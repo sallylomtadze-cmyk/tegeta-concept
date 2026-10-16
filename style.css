@@ -954,3 +954,6 @@ body.playing .dpad{display:none!important}
 .inside::after{content:"იტვირთება";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:2;font-size:13px;font-weight:700;font-feature-settings:'case' 1;letter-spacing:.08em;color:rgba(255,255,255,.7);pointer-events:none;transition:opacity .4s}
 .inside.rendered::after{opacity:0}
 .toast{top:84px}
+.si small{display:block;font-size:11px;color:var(--mut);margin-top:2px}
+.hand span{font-size:11.5px;max-width:200px;line-height:1.35}.hand span b{font-size:12px}.hand .num{color:var(--y)}
+.in-exit,.fs-btn,.hint-x,.shop-x{padding:0;line-height:0}.in-exit .i,.fs-btn .i{width:18px;height:18px;margin:0}

@@ -388,6 +388,11 @@ const ITEMS = [
   { id: 'tyre', name: 'BRIDGESTONE TURANZA 225/45 R17', price: 329, ic: 'tyre', url: SHOP + 'msubuqi-avtomobilis-saburavi/products', at: [-5.6, 1.4, 0], shelf: 'საბურავები', task: 'ბოლო: საბურავი კედლიდან კალათაში' },
 ];
 // what each shelf offers: the first choice of every shelf is the mission product
+const SPEC = {
+  oil: ['სრულად სინთეტიკური, API SN, ACEA A3/B4', 'სინთეტიკური, API SN/CF', 'სრულად სინთეტიკური, ჰიბრიდებისთვის', 'სრულად სინთეტიკური, დასამატებლად'],
+  batt: ['12V 60Ah 540A, R+, 242×175×190 მმ', '12V 74Ah 680A, R+, 278×175×190 მმ', 'AGM Start-Stop, 12V 70Ah 760A', '12V 62Ah 540A, R+'],
+  tyre: ['ზაფხული, 225/45 R17 91W', 'ზაფხული, 205/55 R16 91V', 'ზაფხული, 215/60 R16 95V', 'ზამთარი, 225/45 R17 91H'],
+};
 const CATALOG = {
   oil: [['PETRONAS SYNTIUM 5000 5W-30, 4 ლ', 89], ['PETRONAS SYNTIUM 3000 5W-40, 4 ლ', 79], ['PETRONAS SYNTIUM 7000 0W-20, 4 ლ', 112], ['PETRONAS SYNTIUM 5000 5W-30, 1 ლ', 27]],
   batt: [['VARTA DYNAMIC SLI 60Ah', 215.2], ['VARTA DYNAMIC SLI 74Ah', 351.2], ['VARTA DYNAMIC AGM 70Ah', 559.2], ['MACPOWER PREMIUM 62Ah', 249]],
@@ -395,7 +400,7 @@ const CATALOG = {
 };
 const ZONES = [{ id: 'counter', at: [0, 1.2, -7.6], l: 'გადახდა' }, { id: 'door', at: [0, 1.4, 8.6], l: 'გასასვლელი' }, { id: 'trolley', at: [-1.6, .9, 3.4], l: 'ურიკა' }];
 const game = { on: false, out: false, basket: [], acts: [], target: null, yaw: 0, pitch: .18, zoom: 2.8, x: 0, z: 7, hand: null, mission: 0, pts: 0, bob: 0, drag: null, near: null, ready: false, rig: null };
-let R3, S3, C3, L3 = [], sprites = {};
+let R3, S3, C3, L3 = [], sprites = {}, phone3d = innerWidth < 820;
 function build3d() {
   const cv = $('#store3d'), phone = innerWidth < 820; R3 = new THREE.WebGLRenderer({ canvas: cv, antialias: !phone, alpha: false }); R3.setPixelRatio(phone ? 1 : Math.min(devicePixelRatio || 1, 1.5));
   R3.setClearColor(0x14202a);
@@ -431,20 +436,20 @@ function build3d() {
   };
   // tyres on the left: standing in rows, rubber with a lighter sidewall ring
   const rubber = new THREE.MeshStandardMaterial({ color: 0x15181b, roughness: .55, metalness: .05 }), rim = new THREE.MeshStandardMaterial({ color: 0x8e99a4, roughness: .35, metalness: .8 });
-  const tyres = inst(new THREE.TorusGeometry(.3, .11, 14, 28), rubber, 320), hubs = inst(new THREE.CylinderGeometry(.19, .19, .2, 20), rim, 320);
+  const tyres = inst(new THREE.TorusGeometry(.3, .11, 7, 16), rubber, 320), hubs = inst(new THREE.CylinderGeometry(.19, .19, .2, 10), rim, 320);
   shelfUnit(-1, -8, 16, [.55, 1.45, 2.35, 3.25], (i, x, y, z0, len) => { for (let z = z0 + .35; z < z0 + len - .3; z += .25) { put(tyres, x, y + .41, z, 0); put(hubs, x, y + .41, z, 0, Math.PI / 2); } }); // tread toward the aisle, packed like the real rack
   // oils and batteries on the right
-  const oilLab = label(['SYNTIUM', '5W-30'], '#0f6e52', '#ffffff'), battLab = label(['VARTA', 'BLUE DYNAMIC'], '#1b4fa0', '#ffffff');
+  const oilLab = label(['SYNTIUM', '5W-30'], '#1c242b', '#ffffff'), battLab = label(['VARTA', 'BLUE DYNAMIC'], '#1b4fa0', '#ffffff');
   // real brand marks drawn onto the labels once the SVGs load
   const brandOn = (tex, src, x, y, w, h) => { const im = new Image(); im.onload = () => { const c = tex.image, cx = c.getContext('2d'); cx.drawImage(im, x, y, w, h); tex.needsUpdate = true; }; im.src = src; };
   brandOn(oilLab, 'img/brands/petronas.svg', 8, 6, 60, 44);
   // tyre brands on a sign along the rack
   ['bridgestone', 'continental', 'pirelli'].forEach((b, i) => { const im = new Image(); im.onload = () => { const c = document.createElement('canvas'); c.width = 512; c.height = 128; const x = c.getContext('2d'); x.fillStyle = '#121a21'; x.fillRect(0, 0, 512, 128); x.fillStyle = '#fff'; x.fillRect(0, 118, 512, 10); x.fillStyle = '#fdb913'; x.fillRect(0, 118, 512, 4); const s = Math.min(420 / im.width, 80 / im.height); x.drawImage(im, 256 - im.width * s / 2, 64 - im.height * s / 2, im.width * s, im.height * s); const t = new THREE.CanvasTexture(c); const m = new THREE.Mesh(new THREE.PlaneGeometry(4.6, 1.15), new THREE.MeshBasicMaterial({ map: t })); m.position.set(-W / 2 + .12, 3.75, -5.3 + i * 5.3); m.rotation.y = Math.PI / 2; S3.add(m); }; im.src = `img/brands/${b}.svg`; });
-  const canMat = new THREE.MeshStandardMaterial({ color: 0x1fa07a, roughness: .4, metalness: .1, emissive: 0x0b3d2e, emissiveIntensity: .35 }), capMat = new THREE.MeshStandardMaterial({ color: 0xe9eef2, roughness: .4 });
-  const cans = inst(new THREE.BoxGeometry(.19, .3, .13, 1, 1, 1), canMat, 160), caps = inst(new THREE.CylinderGeometry(.035, .035, .04, 12), capMat, 160), canLabels = inst(new THREE.PlaneGeometry(.17, .11), new THREE.MeshBasicMaterial({ map: oilLab }), 160);
-  const battMat = new THREE.MeshStandardMaterial({ color: 0x2b3136, roughness: .6, emissive: 0x101418, emissiveIntensity: .4 }), batts = inst(new THREE.BoxGeometry(.34, .2, .2), battMat, 80), battTops = inst(new THREE.BoxGeometry(.34, .02, .2), new THREE.MeshStandardMaterial({ color: 0x1b4fa0, roughness: .5 }), 80), battLabels = inst(new THREE.PlaneGeometry(.3, .11), new THREE.MeshBasicMaterial({ map: battLab }), 80), poles = inst(new THREE.CylinderGeometry(.02, .02, .03, 8), rim, 160);
+  const canMat = new THREE.MeshStandardMaterial({ color: 0x2b333a, roughness: .45, metalness: .15, emissive: 0x0d1216, emissiveIntensity: .5 }), capMat = new THREE.MeshStandardMaterial({ color: 0xfdb913, roughness: .35 });
+  const cans = inst(new THREE.BoxGeometry(.19, .3, .13, 1, 1, 1), canMat, 160), caps = inst(new THREE.CylinderGeometry(.04, .04, .05, 6), capMat, 160), canLabels = inst(new THREE.PlaneGeometry(.17, .11), new THREE.MeshBasicMaterial({ map: oilLab }), 160);
+  const battMat = new THREE.MeshStandardMaterial({ color: 0x2b3136, roughness: .6, emissive: 0x101418, emissiveIntensity: .4 }), batts = inst(new THREE.BoxGeometry(.34, .2, .2), battMat, 80), battTops = inst(new THREE.BoxGeometry(.34, .02, .2), new THREE.MeshStandardMaterial({ color: 0x1b4fa0, roughness: .5 }), 80), battLabels = inst(new THREE.PlaneGeometry(.3, .11), new THREE.MeshBasicMaterial({ map: battLab }), 80), poles = inst(new THREE.CylinderGeometry(.02, .02, .03, 5), rim, 160);
   shelfUnit(1, -8, 16, [.55, 1.35, 2.15, 2.95], (i, x, y, z0, len) => {
-    if (i >= 2) for (let z = z0 + .3; z < z0 + len - .2; z += .24) { put(cans, x + .15, y + .15, z); put(caps, x + .15, y + .32, z - .03); put(canLabels, x + .15 - .066, y + .15, z, -Math.PI / 2); }
+    if (i >= 2) for (let z = z0 + .3; z < z0 + len - .2; z += .24) { put(cans, x + .15, y + .15, z); put(caps, x + .15, y + .325, z - .035); put(canLabels, x + .15 - .066, y + .15, z, -Math.PI / 2); }
     else for (let z = z0 + .35; z < z0 + len - .3; z += .42) { put(batts, x + .1, y + .1, z); put(battTops, x + .1, y + .21, z); put(poles, x + .1, y + .235, z - .12); put(poles, x + .1, y + .235, z + .12); put(battLabels, x + .1 - .101, y + .1, z, -Math.PI / 2); }
   });
   [tyres, hubs, cans, caps, canLabels, batts, battTops, battLabels, poles].forEach(m => m.instanceMatrix.needsUpdate = true);
@@ -485,13 +490,13 @@ function build3d() {
   game.rig = { P, held: game.heldMeshes, mixer: null, clips: {}, cur: null, hand: null };
   // the model ships as base64 inside shopper.js, since the artifact host does not serve .glb files
   new THREE.GLTFLoader().parse(Uint8Array.from(atob(window.SHOPPER_B64 || ''), c => c.charCodeAt(0)).buffer, '', g => {
-    const m = g.scene; m.scale.setScalar(1); m.traverse(o => { if (o.isMesh) { o.frustumCulled = false; const mat = o.material; if (/Joints/i.test(mat.name)) { mat.color.set(0xfdb913); mat.metalness = .3; mat.roughness = .5; } else { mat.color.set(0x1f2f3c); mat.metalness = .15; mat.roughness = .65; } } if (o.isBone && /RightHand$/.test(o.name)) game.rig.hand = o; if (o.isBone && /(Left|Right)Arm$/.test(o.name)) (game.rig.arms = game.rig.arms || []).push(o); });
+    const m = g.scene; m.scale.setScalar(1); m.traverse(o => { if (o.isMesh) { o.frustumCulled = false; const mat = o.material; if (/Joints/i.test(mat.name)) { mat.color.set(0xfdb913); mat.metalness = .3; mat.roughness = .5; } else { mat.color.set(0x1f2f3c); mat.metalness = .15; mat.roughness = .65; } } if (o.isBone && /RightHand$/.test(o.name)) game.rig.hand = o; if (o.isBone && /(Left|Right)Arm$/.test(o.name)) (game.rig.arms = game.rig.arms || []).push(o); if (o.isBone && /(Left|Right)ForeArm$/.test(o.name)) (game.rig.fore = game.rig.fore || []).push(o); });
     P.add(m); const mx = new THREE.AnimationMixer(m); game.rig.mixer = mx;
     g.animations.forEach(c => game.rig.clips[c.name] = mx.clipAction(c));
     play('idle');
   }, e => showErr('პერსონაჟი ვერ ჩაიტვირთა'));
   // mirror floor under the glossy one: the room reflects, like a polished showroom
-  const mirror = new THREE.Reflector(new THREE.PlaneGeometry(W, D), { textureWidth: phone ? 384 : 640, textureHeight: phone ? 384 : 640, color: 0x5e7284, clipBias: .003 }); mirror.rotation.x = -Math.PI / 2; mirror.position.y = -.005; S3.add(mirror);
+  const mirror = new THREE.Reflector(new THREE.PlaneGeometry(W, D), { textureWidth: 512, textureHeight: 512, color: 0x5e7284, clipBias: .003 }); mirror.rotation.x = -Math.PI / 2; mirror.position.y = -.005; mirror.visible = !phone; S3.add(mirror); game.mirror = mirror;
   floor.material.transparent = true; floor.material.opacity = .72;
   // soft skirting: a dark gradient at the base of every wall, so photo and floor melt into each other instead of a hard seam
   const gc = document.createElement('canvas'); gc.width = 4; gc.height = 128; const gx = gc.getContext('2d'); const gg = gx.createLinearGradient(0, 0, 0, 128); gg.addColorStop(0, 'rgba(14,22,30,0)'); gg.addColorStop(.6, 'rgba(14,22,30,.18)'); gg.addColorStop(1, 'rgba(14,22,30,.5)'); gx.fillStyle = gg; gx.fillRect(0, 0, 4, 128);
@@ -534,14 +539,14 @@ function update3d(dt) {
   if (Math.abs(game.x) < 2.3 && game.z < -6.9) game.z = -6.9; // the counter desk is solid
   // third person: the figure walks ahead, the camera follows behind and above, pitch and zoom from the drag
   const rig = game.rig; rig.P.position.set(game.x, 0, game.z); if (mv || sx) { const want = game.yaw + Math.PI + Math.atan2(sx, mv); let da = want - rig.P.rotation.y; da = Math.atan2(Math.sin(da), Math.cos(da)); rig.P.rotation.y += da * Math.min(1, dt * 12); }
-  if (rig.mixer) { rig.mixer.update(dt); play(mv ? 'walk' : 'idle'); if (game.trolley.taken && rig.arms) for (const b of rig.arms) { const L = b.name.includes('Left'); b.rotation.set(1.2, L ? -.35 : .35, L ? -1.25 : 1.25); } }
+  if (rig.mixer) { rig.mixer.update(dt); play(mv ? 'walk' : 'idle'); if (game.trolley.taken && rig.arms) for (const b of rig.arms) { const L = b.name.includes('Left'); b.rotation.set(-1, 0, L ? -1.4 : 1.4); } if (game.trolley.taken && rig.fore) for (const b of rig.fore) b.rotation.set(0, 0, 0); }
   if (game.trolley && game.trolley.taken) { // rolls in front of the shopper, turning with it
-    const tg = game.trolley.g, ang = rig.P.rotation.y; const tx = game.x + Math.sin(ang) * .78, tz = game.z + Math.cos(ang) * .78;
+    const tg = game.trolley.g, ang = rig.P.rotation.y; const tx = game.x + Math.sin(ang) * .62, tz = game.z + Math.cos(ang) * .62;
     tg.position.x += (Math.max(-4.6, Math.min(4.6, tx)) - tg.position.x) * Math.min(1, dt * 8); tg.position.z += (Math.max(-6.6, Math.min(7.6, tz)) - tg.position.z) * Math.min(1, dt * 8); let da = ang + Math.PI - tg.rotation.y; da = Math.atan2(Math.sin(da), Math.cos(da)); tg.rotation.y += da * Math.min(1, dt * 8);
     if (mv) for (const w of tg.children) if (w.geometry && w.geometry.type === 'CylinderGeometry' && w.position.y < .1) w.rotation.y += dt * 6; // wheels spin
   }
   for (const id in rig.held) rig.held[id].visible = !!game.hand && game.hand.id === id;
-  if (game.hand && rig.hand && rig.held[game.hand.id]) { const hm = rig.held[game.hand.id]; rig.hand.getWorldPosition(hm.position); rig.hand.getWorldQuaternion(hm.quaternion); hm.position.y -= .12; hm.translateY(-.08); if (game.hand.id === 'tyre') { hm.position.y -= .1; hm.rotateY(Math.PI / 2); } }
+  if (game.hand && rig.hand && rig.held[game.hand.id]) { const hm = rig.held[game.hand.id]; rig.hand.getWorldPosition(hm.position); hm.position.y += .1; hm.position.x += Math.sin(game.yaw + Math.PI) * .25; hm.position.z += Math.cos(game.yaw + Math.PI) * .25; if (game.hand.id === 'tyre') hm.position.y -= .1; }
   const d = game.zoom, ph = game.pitch, fx = -Math.sin(game.yaw), fz = -Math.cos(game.yaw);
   C3.position.set(game.x - fx * d * Math.cos(ph), 1.5 + d * Math.sin(ph) + Math.sin(game.bob) * .02 * (mv ? 1 : 0), game.z - fz * d * Math.cos(ph));
   C3.position.x = Math.max(-6.6, Math.min(6.6, C3.position.x)); C3.position.z = Math.max(-8.6, Math.min(8.6, C3.position.z)); C3.position.y = Math.max(.6, Math.min(3.9, C3.position.y));
@@ -561,6 +566,7 @@ function update3d(dt) {
   const pr = $('#prompt3d');
   let acts = [];
   if (game.hand) acts = game.trolley.taken ? [['cart', 'ურიკაში ჩადე'], ['back', 'დადე უკან']] : [['back', 'დადე უკან'], ['need', 'ურიკა შესასვლელთანაა']];
+  if (game.hand && rig.held[game.hand.id]) { const hm = rig.held[game.hand.id]; hm.rotation.y += dt * 1.2; } // the shopper turns the product in hand, looking at it
   else if (best) {
     if (best.item) acts = [['choose', `აირჩიე: ${best.item.shelf}`]];
     else if (best.id === 'trolley') acts = game.trolley.taken ? [] : [['take', 'აიღე ურიკა']];
@@ -578,6 +584,7 @@ function update3d(dt) {
   for (const id in sprites) { const s = sprites[id]; s.sp.position.y = (ITEMS.find(i => i.id === id)?.at[1] ?? 1.3) + .9 + Math.sin(t * 2 + s.sp.position.x) * .05; s.ring.material.opacity = (best && best.id === id) ? .9 : .4; s.sp.visible = true; }
   const w = scr.clientWidth, h = scr.clientHeight;
   $$('#labels3d .lb3').forEach(l => { const p = pts.find(x => x.id === l.dataset.id); if (p.id === 'trolley' && game.trolley.taken) { l.style.display = 'none'; return; } V3.set(p.at[0], p.at[1] + .75, p.at[2]).project(C3); const vis = V3.z < 1 && Math.abs(V3.x) < 1.1; l.style.display = vis ? '' : 'none'; l.style.left = (V3.x + 1) / 2 * w + 'px'; l.style.top = (1 - V3.y) / 2 * h + 'px'; l.classList.toggle('on', best && best.id === p.id); });
+  if (game.mirror) game.mirror.visible = !phone3d;
   R3.render(S3, C3);
 }
 function toast(m) { const t = $('#toast'); t.textContent = m; t.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => t.hidden = true, 2600); }
@@ -604,7 +611,7 @@ function doAct(a) {
 }
 function pickProduct(type, i) {
   const base = ITEMS.find(x => x.id === type), [name, price] = CATALOG[type][i];
-  game.hand = { id: type, name, price, ic: base.ic, url: base.url }; $('#hand').hidden = false; $('#handImg').src = ic(base.ic); $('#handTx').textContent = name;
+  game.hand = { id: type, name, price, ic: base.ic, url: base.url, spec: SPEC[type][i] }; $('#hand').hidden = false; $('#handImg').src = ic(base.ic); $('#handTx').innerHTML = `<b>${name}</b><br>${SPEC[type][i]}<br><span class="num">${price.toFixed(2)} ₾</span>`;
   closeShop(); toast('აიღე. ჩადე ურიკაში ან დადე უკან');
 }
 $('#prompt3d').onclick = e => { const b = e.target.closest('button'); if (b) doAct(b.dataset.a); };
@@ -617,7 +624,8 @@ function setMission() {
 let loop3d = 0, last3d = 0;
 let frames3d = 0;
 function frame3d(ts) { if (!inside || !game.on) return; const dt = Math.min(.05, (ts - last3d) / 1000 || 0); last3d = ts; try { update3d(dt); } catch (e) { showErr(e); return; }
-  if (++frames3d % 60 === 0 && (R3.domElement.width < 2 || R3.info.render.calls === 0 || Math.abs(C3.aspect - scr.clientWidth / scr.clientHeight) > .01)) size3d(); // heal a canvas that was sized while hidden
+  if (frames3d % 60 === 0 && inside && !document.body.classList.contains('fs')) setFs(true);
+  if (++frames3d % 60 === 0) { const cw = scr.clientWidth, ch = scr.clientHeight; if (cw > 1 && ch > 1 && (R3.domElement.width !== Math.round(cw * R3.getPixelRatio()) || R3.domElement.height !== Math.round(ch * R3.getPixelRatio()))) { R3.setSize(cw, ch, false); C3.aspect = cw / ch; C3.updateProjectionMatrix(); } } // heal a canvas sized while hidden, without touching the camera settings
   if (frames3d === 2) insideEl.classList.add('rendered');
   loop3d = requestAnimationFrame(frame3d); }
 function showErr(e) { const t = $('#toast'); t.hidden = false; t.style.whiteSpace = 'normal'; t.textContent = 'შეცდომა: ' + (e && e.message || e); t.dataset.stack = (e && e.stack || '').slice(0, 600); console.error(e); }
@@ -687,7 +695,7 @@ function shelf(g) {
   $$('#shopCats button').forEach(x => x.classList.toggle('on', x.dataset.g === g));
   $('#shopCats').hidden = g === 'book' || g === 'checkout';
   if (g === 'checkout') $('#cartSum').innerHTML = `გადახდილია <b class="num">${game.receipt.reduce((s, i) => s + i.price, 0).toFixed(2)} ₾</b>`;
-  if (g.startsWith('pick:')) { const type = g.slice(5); $('#shopCats').hidden = true; $('#shopItems').innerHTML = `<p class="co-h">${ITEMS.find(x => x.id === type).shelf}: აირჩიე</p>` + CATALOG[type].map((p, i) => `<div class="si"><img src="${ic(ITEMS.find(x => x.id === type).ic)}" alt=""><span><b>${p[0]}</b><em class="num">${p[1].toFixed(2)} ₾</em></span><button type="button" class="pick-btn" data-t="${type}" data-i="${i}">აიღე</button></div>`).join(''); return; }
+  if (g.startsWith('pick:')) { const type = g.slice(5), it = ITEMS.find(x => x.id === type); $('#shopCats').hidden = true; $('#shopItems').innerHTML = `<p class="co-h">${it.shelf}: აირჩიე</p>` + CATALOG[type].map((p, i) => `<div class="si"><img src="${ic(it.ic)}" alt=""><span><b>${p[0]}</b><em class="num">${p[1].toFixed(2)} ₾</em><small>${SPEC[type][i]}</small></span><button type="button" class="pick-btn" data-t="${type}" data-i="${i}">აიღე</button></div>`).join(''); return; }
   $('#shopItems').innerHTML = g === 'checkout'
     ? `<p class="co-h">შენი კალათა რეალურ მაღაზიაშიც გელოდება</p>` + game.receipt.map(i => `<a class="si" href="${i.url}"><img src="${ic(i.ic)}" alt=""><span><b>${i.name}</b><em class="num">${i.price.toFixed(2)} ₾</em></span><i class="go"></i></a>`).join('') + `<p class="co-t">სულ <b class="num">${game.receipt.reduce((s, i) => s + i.price, 0).toFixed(2)} ₾</b>, მიტანა თბილისში უფასოა</p>`
     : g === 'book'
@@ -732,7 +740,8 @@ sizeRoad(); addEventListener('resize', sizeRoad); addEventListener('load', sizeR
 
 // Fullscreen: the game screen takes the whole display, like a TV; the pad stays on top on phones
 function setFs(on) { document.body.classList.toggle('fs', on); $('#fsBtn').classList.toggle('on', on); setTimeout(() => { sizeRoad(); size3d(); render(); if (on) scr.scrollIntoView(); }, 60); }
-$('#fsBtn').onclick = () => setFs(!document.body.classList.contains('fs'));
+$('#fsBtn').onclick = e => { if (e.detail === 0 && inside) return; setFs(!document.body.classList.contains('fs')); }; // keyboard Enter never toggles it while playing
+$('#fsBtn').addEventListener('keydown', e => { if (inside) e.preventDefault(); });
 addEventListener('keydown', e => { if (e.key === 'f' || e.key === 'F') $('#fsBtn').click(); });
 
 // #store opens the page already inside the shop (handy for sharing and testing)
