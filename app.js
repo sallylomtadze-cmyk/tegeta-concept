@@ -924,3 +924,6 @@ if (location.hash === '#store' || location.hash === '#shop') setTimeout(() => { 
 // build the store while the page is idle, so entering is instant
 if (window.THREE) setTimeout(() => { try { if (!game.ready) { build3d(); size3d(); } } catch (e) { showErr(e); } }, 1500);
 else addEventListener('load', () => { if (!window.THREE) showErr('3D ბიბლიოთეკა ვერ ჩაიტვირთა'); });
+
+// opening page: plays once on load, a tap or key goes straight in
+{ const sp = $('#splash'); if (sp) { const go = () => { sp.classList.add('out'); setTimeout(() => sp.remove(), 800); }; const t = setTimeout(go, 2900); sp.addEventListener('pointerdown', () => { clearTimeout(t); go(); }); addEventListener('keydown', () => { clearTimeout(t); go(); }, { once: true }); } }
