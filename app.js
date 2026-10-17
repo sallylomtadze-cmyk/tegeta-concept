@@ -926,4 +926,4 @@ if (window.THREE) setTimeout(() => { try { if (!game.ready) { build3d(); size3d(
 else addEventListener('load', () => { if (!window.THREE) showErr('3D ბიბლიოთეკა ვერ ჩაიტვირთა'); });
 
 // opening page: plays once on load, a tap or key goes straight in
-{ const sp = $('#splash'); if (sp) { const go = () => { sp.classList.add('out'); setTimeout(() => sp.remove(), 800); }; const t = setTimeout(go, 2900); sp.addEventListener('pointerdown', () => { clearTimeout(t); go(); }); addEventListener('keydown', () => { clearTimeout(t); go(); }, { once: true }); } }
+{ const sp = $('#splash'); if (sp) { const go = () => { sp.classList.add('out'); setTimeout(() => sp.remove(), 800); }; const t = setTimeout(go, 3300); sp.addEventListener('pointerdown', () => { clearTimeout(t); go(); }); addEventListener('keydown', () => { clearTimeout(t); go(); }, { once: true }); } }

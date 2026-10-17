@@ -1031,15 +1031,16 @@ body:not(.fs) .scr-top #clk{margin-right:44px}
 .inside .mission,.inside .prompt3d,.inside #labels3d,.inside .stick,.inside .swap-char,.inside .basket{transition:opacity .5s}
 .inside.intro .mission,.inside.intro .prompt3d,.inside.intro #labels3d,.inside.intro .stick,.inside.intro .swap-char,.inside.intro .touch-hint,.inside.intro .obj-arrow{opacity:0;pointer-events:none}
 
-/* opening page: the original logo on a deep Tegeta navy, a tyre ring and the road line draw themselves in yellow */
-.splash{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;overflow:hidden;background:radial-gradient(120% 85% at 50% 42%,#1c3a4e 0%,#10242f 42%,#0a161e 72%,#05090d 100%);transition:opacity .7s ease,visibility .7s;cursor:pointer}
-.splash.out{opacity:0;visibility:hidden;pointer-events:none}
-.sp-mark{position:absolute;width:min(92vmin,620px);height:auto;overflow:visible}
-.sp-l{stroke:#fdb913;stroke-width:1.6;stroke-linecap:round;vector-effect:non-scaling-stroke}
-.sp-c1{stroke-dasharray:1320;stroke-dashoffset:1320;animation:spDraw 1.6s cubic-bezier(.65,0,.35,1) .15s forwards}
-.sp-c2{stroke:rgba(253,185,19,.35);stroke-dasharray:943;stroke-dashoffset:943;animation:spDraw 1.6s cubic-bezier(.65,0,.35,1) .35s forwards}
-.sp-t{opacity:0;animation:spFade .6s ease 1.2s forwards}
-.sp-road{stroke:rgba(253,185,19,.5);stroke-dasharray:1100;stroke-dashoffset:1100;animation:spDraw 1.4s cubic-bezier(.65,0,.35,1) .5s forwards}
-.sp-logo{position:relative;width:calc(min(92vmin,620px) * .42);height:auto;opacity:0;transform:translateY(10px);animation:spLogo .9s cubic-bezier(.2,.7,.2,1) .7s forwards}
-@keyframes spDraw{to{stroke-dashoffset:0}}@keyframes spFade{to{opacity:1}}@keyframes spRoad{to{transform:scaleX(1)}}@keyframes spLogo{to{opacity:1;transform:none}}
-@media (prefers-reduced-motion:reduce){.sp-c1,.sp-c2,.sp-t,.sp-road,.sp-logo{animation-duration:.01s;animation-delay:0s}}
+/* opening page: only the logo. Georgian line, then English, wipe in; the yellow rule draws from the centre; one soft light passes across */
+.splash{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;overflow:hidden;cursor:pointer;background:radial-gradient(90% 70% at 50% 46%,#173246 0%,#0d1f2b 46%,#070f15 100%);transition:opacity .9s cubic-bezier(.4,0,.2,1),visibility .9s}
+.splash::before{content:'';position:absolute;width:70vmax;height:70vmax;border-radius:50%;background:radial-gradient(closest-side,rgba(253,185,19,.07),transparent);opacity:0;animation:spGlow 2.6s ease .2s forwards}
+.splash.out{opacity:0;visibility:hidden;pointer-events:none}.splash.out .sp-logo{transform:scale(1.04);filter:blur(2px)}
+.sp-logo{position:relative;width:min(74vw,520px);height:auto;overflow:visible;transition:transform .9s cubic-bezier(.4,0,.2,1),filter .9s}
+.sp-wipe{transform-box:fill-box;transform-origin:0 50%;transform:scaleX(0)}
+.sp-wk{animation:spWipe 1.1s cubic-bezier(.77,0,.18,1) .25s forwards}.sp-we{animation:spWipe 1.1s cubic-bezier(.77,0,.18,1) .55s forwards}
+.sp-ka,.sp-en{transform-box:fill-box;transform:translateY(14%);opacity:0}
+.sp-ka{animation:spRise 1.2s cubic-bezier(.2,.7,.2,1) .25s forwards}.sp-en{animation:spRise 1.2s cubic-bezier(.2,.7,.2,1) .55s forwards}
+.sp-ul{transform-box:fill-box;transform-origin:50% 50%;transform:scaleX(0);animation:spRule 1s cubic-bezier(.77,0,.18,1) 1.15s forwards}
+.sp-sheen{transform:translateX(0);animation:spSheen 1.1s cubic-bezier(.4,0,.2,1) 1.7s forwards}
+@keyframes spWipe{to{transform:scaleX(1)}}@keyframes spRise{to{transform:none;opacity:1}}@keyframes spRule{to{transform:scaleX(1)}}@keyframes spSheen{to{transform:translateX(560px)}}@keyframes spGlow{to{opacity:1}}
+@media (prefers-reduced-motion:reduce){.sp-wk,.sp-we,.sp-ka,.sp-en,.sp-ul,.sp-sheen,.splash::before{animation-duration:.01s;animation-delay:0s}}
